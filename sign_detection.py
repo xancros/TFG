@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import os
 import math
+from operator import itemgetter
 from termcolor import colored
 
 mser = cv2.MSER_create()
@@ -153,12 +154,10 @@ def lineas(imageName=None):
         linesConverted.append(punto)
         cv2.circle(src,pt1,4,(255,0,0),-1)
         cv2.circle(src,pt2,4,(0,255,0),-1)
-        # linesConverted[i][0]=pt1
-        # linesConverted[i][1]=pt2
-        cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
-        cv2.imshow("mm",src)
-        cv2.waitKey(2000)
-        cv2.destroyAllWindows()
+        # cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
+        # cv2.imshow("mm",src)
+        # cv2.waitKey(2000)
+        # cv2.destroyAllWindows()
     # cv2.imshow("mm",src)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
@@ -487,7 +486,55 @@ def line_intersection(line1,line2):
     x = det(d, xdiff) / div
     y = det(d, ydiff) / div
     return x, y
+def estaPuntoenLista(list,ndarray):
+    for p in list:
+        if(p[0]==ndarray[0] and p[1]==ndarray[1]):
+            return True
+    return False
 
+def puntoParecido(lst,pt,ranMin,ranMax,index):
+    print(colored(pt,'red'))
+    for lastPoint in lst:
+    # lastPoint = lst[index]
+        if(lastPoint[0]==0 and lastPoint[1]==0):
+            return False
+        YminRan = lastPoint[0]-ranMin
+        XminRan = lastPoint[1]-ranMin
+        YmaxRan = lastPoint[0]+ranMax
+        XmaxRan = lastPoint[1]+ranMax
+        enRangoY = (YminRan<=pt[0] and YmaxRan>=pt[0])
+        enRangoX = (XminRan<=pt[1] and XmaxRan>=pt[1])
+        if( enRangoY and enRangoX ):
+            #esta dentro del rango por lo que no se añade
+            return True
+    return False
+
+def maximizarPuntos(im,list):
+    # >> > from operator import itemgetter
+    # >> > L = [[0, 1, 'f'], [4, 2, 't'], [9, 4, 'afsd']]
+    # >> > sorted(L, key=itemgetter(2))
+    # [[9, 4, 'afsd'], [0, 1, 'f'], [4, 2, 't']]
+    print("------------------------------------------------------")
+    print (list)
+    # sorted(list,key=itemgetter(0))
+    list.sort(key=itemgetter(0,1), reverse=True)
+    print (list)
+    auxiliar = []
+    shape = np.zeros((4,2),np.uint16)
+    shape[0]=np.rint(list[0])
+    auxiliar.append(list[0])
+    im2 = im.copy()
+    index = 0
+    for pt in list:
+        x, y = pt
+        if(not puntoParecido(shape,pt,5,5,index)):
+            cv2.circle(im2, (int(x), int(y)), 4, (0, 255, 0), -1)
+            cv2.imshow("mm", im2)
+            cv2.destroyAllWindows()
+            im2=im.copy()
+            shape[index+1]=np.rint(pt)
+            index+=1
+    return list
 def acumularPuntosInterseccion(lines,im):
     # for (int i = 0; i < lines.size(); i++)
     # {
@@ -525,18 +572,19 @@ def acumularPuntosInterseccion(lines,im):
 
 
             point = seg_intersect(lines[i][0],lines[i][1],lines[j][0],lines[j][1])
-            if(point[0]>0):
-                cv2.circle(im2, (int(point[0]), int(point[1])), 4, (0, 255, 0), -1)
-                cv2.imshow("mm", im2)
-                cv2.destroyAllWindows()
+            # if(point[0]>0):
+            #     cv2.circle(im2, (int(point[0]), int(point[1])), 4, (0, 255, 0), -1)
+            #     cv2.imshow("mm", im2)
+            #     cv2.destroyAllWindows()
             if(point[0]>=0 and point[1] >=0 and point[1]<imShape[0] and point[0]<imShape[1]):
-
-                ruptura.append(point)
+                if(not estaPuntoenLista(ruptura,point)):
+                    ruptura.append(point)
             im2 = im.copy()
     if(True):
+        ruptura = maximizarPuntos(im,ruptura)
         for pt in ruptura:
             x,y = pt
-            cv2.circle(im2,(int(x),int(y)),2,(255,0,0),-1)
+            cv2.circle(im2,(int(x),int(y)),4,(0,255,0),-1)
             cv2.imshow("mm",im2)
             cv2.waitKey()
             cv2.destroyAllWindows()
