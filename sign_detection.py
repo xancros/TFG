@@ -123,7 +123,33 @@ def train ():
 
                     pruebaCirculo(I,filename)
 
+def prueba(im):
+    im2 = im.copy()
+    dst = cv2.Canny(im2,50,200,3)
+    cdst=cv2.cvtColor(dst,cv2.COLOR_GRAY2BGR)
+    lineas = cv2.HoughLines(dst,1,np.pi/180,100,0,0)
 
+    for i in range(len(lineas)):
+        # rho,theta = i[0]
+        # a = math.cos(theta)
+        # b = math.sin(theta)
+        # x0, y0 = a * rho, b * rho
+        # pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+        # pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+        rho,theta = lineas[i][0]
+
+        a = math.cos(theta)
+        b = math.sin(theta)
+        x0 = a*rho
+        y0 = b*rho
+        x=int(x0+1000*(-b))
+        y=int(y0+1000*(a))
+        w=int(x0-1000*(-b))
+        h=int(y0-1000*(a))
+        cv2.line(cdst,(x,y),(w,h),(0,255,0),1,cv2.LINE_AA)
+    cv2.imshow("original",im2)
+    cv2.imshow("lineas",cdst)
+    cv2.destroyAllWindows()
 def lineas(imageName=None):
     if(imageName is None):
         fn = cv2.imread("./ceda.jpg")
@@ -133,16 +159,20 @@ def lineas(imageName=None):
     src = fn.copy()
     imShape = fn.shape
     bn = cv2.cvtColor(src,cv2.COLOR_BGR2GRAY)
-    dst = cv2.Canny(bn, 50, 200)
-    cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
-    lines = cv2.HoughLines(dst,1,np.pi/180,200)
+    dst = cv2.Canny(bn, 50, 200,apertureSize=3)
+    # ah=cv2.imread(imageName,0)
+    # prueba(ah)
+    # cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
+
+    lines = cv2.HoughLines(dst,1,np.pi/180,150)
     # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
     a, b, c = lines.shape
     # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
     linesConverted = []
-    for i in range(len(lines)):
-        rho = lines[i][0][0]
-        theta = lines[i][0][1]
+    for i in lines:
+        # rho = lines[i][0][0]
+        # theta = lines[i][0][1]
+        rho,theta = i[0]
         a = math.cos(theta)
         b = math.sin(theta)
         x0, y0 = a * rho, b * rho
@@ -154,13 +184,14 @@ def lineas(imageName=None):
         linesConverted.append(punto)
         cv2.circle(src,pt1,4,(255,0,0),-1)
         cv2.circle(src,pt2,4,(0,255,0),-1)
-        # cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
-        # cv2.imshow("mm",src)
+        cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
+        cv2.imshow("mm",src)
         # cv2.waitKey(2000)
-        # cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
     # cv2.imshow("mm",src)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
+    MIRAR CUADERNO
     acumularPuntosInterseccion(np.asarray(linesConverted),fn)
     cv2.imshow("source", fn)
     # cv2.imshow("detected lines", cdst)
@@ -493,7 +524,7 @@ def estaPuntoenLista(list,ndarray):
     return False
 
 def puntoParecido(lst,pt,ranMin,ranMax,index):
-    print(colored(pt,'red'))
+    # print(colored(pt,'red'))
     for lastPoint in lst:
     # lastPoint = lst[index]
         if(lastPoint[0]==0 and lastPoint[1]==0):
@@ -517,6 +548,19 @@ def maximizarPuntos(im,list):
     print("------------------------------------------------------")
     print (list)
     # sorted(list,key=itemgetter(0))
+    maxY=(map(max, zip(*list)))
+    minX=map(min, zip(*list))
+
+    x,y = maxY
+    z,w = minX
+    print (colored("el maximo es: ",'red'),(x,y))
+    print (colored("el minimo es: ",'green'),(z,w))
+
+    cv2.circle(im,(int(x),int(y)),4,(0,0,255),-1)
+    cv2.circle(im,(int(z),int(w)),4,(0,255,0),-1)
+    cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
+    cv2.imshow("mmm",im)
+    cv2.destroyAllWindows()
     list.sort(key=itemgetter(0,1), reverse=True)
     print (list)
     auxiliar = []
@@ -527,28 +571,17 @@ def maximizarPuntos(im,list):
     index = 0
     for pt in list:
         x, y = pt
-        if(not puntoParecido(shape,pt,5,5,index)):
+        if(not puntoParecido(shape,pt,20,20,index)):
             cv2.circle(im2, (int(x), int(y)), 4, (0, 255, 0), -1)
             cv2.imshow("mm", im2)
             cv2.destroyAllWindows()
             im2=im.copy()
             shape[index+1]=np.rint(pt)
             index+=1
-    return list
+
+    # return list
+    return shape
 def acumularPuntosInterseccion(lines,im):
-    # for (int i = 0; i < lines.size(); i++)
-    # {
-    # for (int j = i + 1; j < lines.size(); j++)
-    # {
-    # cv::
-    #     Point2f
-    # pt = computeIntersectionOfTwoLine(lines[i], lines[j]);
-    # if (pt.x >= 0 & & pt.y >= 0 & & pt.x < image.cols & & pt.y < image.rows)
-    # {
-    # corners.push_back(pt);
-    # }
-    # }
-    # }
     # cv2.imshow("mm",im)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
@@ -565,8 +598,8 @@ def acumularPuntosInterseccion(lines,im):
             x01, y01 = linea1[1]
             x10,y10 = linea2[0]
             x11, y11 = linea2[1]
-            cv2.line(im2,(int(x00),int(y00)),(int(x01),int(y01)),(0,0,255),1,cv2.LINE_AA)
-            cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)),(255,0,0) ,1, cv2.LINE_AA)
+            # cv2.line(im2,(int(x00),int(y00)),(int(x01),int(y01)),(0,0,255),1,cv2.LINE_AA)
+            # cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)),(255,0,0) ,1, cv2.LINE_AA)
             # cv2.imshow("mm", im2)
             # cv2.destroyAllWindows()
 
@@ -582,12 +615,16 @@ def acumularPuntosInterseccion(lines,im):
             im2 = im.copy()
     if(True):
         ruptura = maximizarPuntos(im,ruptura)
+        print (ruptura)
+        ruptura=ruptura[::-1]
+        print (ruptura)
         for pt in ruptura:
             x,y = pt
             cv2.circle(im2,(int(x),int(y)),4,(0,255,0),-1)
             cv2.imshow("mm",im2)
-            cv2.waitKey()
+            # cv2.waitKey()
             cv2.destroyAllWindows()
+
 
 def otrosEjemplos():
     img = cv2.imread("./rect2.png")
@@ -600,6 +637,11 @@ def otrosEjemplos():
 # usoHOG()
 # train()
 # pruebaLineas(None,None)
-lineas("./rectanguloS.jpg")
+lineas("./velocidad.jpg")
+# lineas("./triangulo.jpg")
+# lineas("./rectanguloS.jpg")
+# lineas("./ceda.jpg")
+# lineas("./paso.jpg")
+# lineas("./velocidad.jpg")
 # print (seg_intersect( p1,p2, p3,p4))
 # pruebaCirculo("./ceda.jpg","ceda")
