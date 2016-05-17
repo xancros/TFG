@@ -127,7 +127,7 @@ def prueba(im):
     im2 = im.copy()
     dst = cv2.Canny(im2,50,200,3)
     cdst=cv2.cvtColor(dst,cv2.COLOR_GRAY2BGR)
-    lineas = cv2.HoughLines(dst,1,np.pi/180,100,0,0)
+    lineas = cv2.HoughLines(dst,1,np.pi/180,150,0,0)
 
     for i in range(len(lineas)):
         # rho,theta = i[0]
@@ -164,7 +164,7 @@ def lineas(imageName=None):
     # prueba(ah)
     # cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
 
-    lines = cv2.HoughLines(dst,1,np.pi/180,150)
+    lines = cv2.HoughLines(dst,1,np.pi/180,100)
     # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
     a, b, c = lines.shape
     # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
@@ -182,16 +182,16 @@ def lineas(imageName=None):
         # pt2 = (abs(int(x0 - imShape[1] * (-b))), int(y0 - imShape[0] * (a)))
         punto = np.array([pt1,pt2])
         linesConverted.append(punto)
-        cv2.circle(src,pt1,4,(255,0,0),-1)
-        cv2.circle(src,pt2,4,(0,255,0),-1)
-        cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
-        cv2.imshow("mm",src)
-        # cv2.waitKey(2000)
-        cv2.destroyAllWindows()
+        # cv2.circle(src,pt1,4,(255,0,0),-1)
+        # cv2.circle(src,pt2,4,(0,255,0),-1)
+        # cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
+        # cv2.imshow("mm",src)
+        # # cv2.waitKey(2000)
+        # cv2.destroyAllWindows()
     # cv2.imshow("mm",src)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
-    MIRAR CUADERNO
+
     acumularPuntosInterseccion(np.asarray(linesConverted),fn)
     cv2.imshow("source", fn)
     # cv2.imshow("detected lines", cdst)
@@ -492,7 +492,9 @@ def seg_intersect(a1,a2, b1,b2) :
     dap = perp(da)
     denom = np.dot( dap, db)
     num = np.dot( dap, dp )
-    return (num / denom.astype(float))*db + b1
+    output = (num / denom.astype(float))*db + b1
+    return output
+    # return int(math.ceil((num / denom.astype(float))*db + b1))
 
 p1 = np.array( [0, 3] )
 p2 = np.array( [1, 5] )
@@ -548,23 +550,42 @@ def maximizarPuntos(im,list):
     print("------------------------------------------------------")
     print (list)
     # sorted(list,key=itemgetter(0))
+    a,b = zip(*list)
     maxY=(map(max, zip(*list)))
     minX=map(min, zip(*list))
+    x1,y1 = maxY
+    x2,y2 = minX
 
-    x,y = maxY
-    z,w = minX
-    print (colored("el maximo es: ",'red'),(x,y))
-    print (colored("el minimo es: ",'green'),(z,w))
-
-    cv2.circle(im,(int(x),int(y)),4,(0,0,255),-1)
-    cv2.circle(im,(int(z),int(w)),4,(0,255,0),-1)
-    cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
+    puntosEjeX,puntosEjeY = np.asarray(a),np.asarray(b)
+    ptoMin = np.where(puntosEjeX==x2)
+    indicesY = []
+    for indice in ptoMin[0]:
+        indicesY.append(puntosEjeY[indice])
+    minMaxY = np.amax(indicesY)
+    minMax = [x2,minMaxY]
+    ptoMax = np.where(puntosEjeY==y2)
+    indicesX = []
+    for indice in ptoMax[0]:
+        indicesX.append(puntosEjeX[indice])
+    minX = np.amax(indicesX)
+    maxMin= [minX,y2]
+    cv2.circle(im,(maxMin[0],maxMin[1]),4,(255,0,0),-1)
+    cv2.circle(im,(int(x1),int(y1)),4,(0,0,255),-1)
+    cv2.circle(im,(minMax[0],minMax[1]),4,(255,0,0),-1)
+    cv2.circle(im,(int(x2),int(y2)),4,(0,255,0),-1)
+    # cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
     cv2.imshow("mmm",im)
     cv2.destroyAllWindows()
+    # print ("el punto en el eje X minimo es :",z," el punto encontrado es :",puntosEjeX[ptoMin[0][0]])
+    # gggg = ara[(ara <(x+2))&(ara >(x-2))]
+    # print (colored("el maximo es: ",'red'),(x,y))
+    # print (colored("el minimo es: ",'green'),(z,w))
+
+
     list.sort(key=itemgetter(0,1), reverse=True)
     print (list)
     auxiliar = []
-    shape = np.zeros((4,2),np.uint16)
+    shape = np.zeros((4,2),np.uint32)
     shape[0]=np.rint(list[0])
     auxiliar.append(list[0])
     im2 = im.copy()
@@ -598,10 +619,9 @@ def acumularPuntosInterseccion(lines,im):
             x01, y01 = linea1[1]
             x10,y10 = linea2[0]
             x11, y11 = linea2[1]
-            # cv2.line(im2,(int(x00),int(y00)),(int(x01),int(y01)),(0,0,255),1,cv2.LINE_AA)
-            # cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)),(255,0,0) ,1, cv2.LINE_AA)
-            # cv2.imshow("mm", im2)
-            # cv2.destroyAllWindows()
+            cv2.line(im2,(int(x00),int(y00)),(int(x01),int(y01)),(255,0,0),1,cv2.LINE_AA)
+            cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)),(255,0,0) ,1, cv2.LINE_AA)
+
 
 
             point = seg_intersect(lines[i][0],lines[i][1],lines[j][0],lines[j][1])
@@ -611,8 +631,14 @@ def acumularPuntosInterseccion(lines,im):
             #     cv2.destroyAllWindows()
             if(point[0]>=0 and point[1] >=0 and point[1]<imShape[0] and point[0]<imShape[1]):
                 if(not estaPuntoenLista(ruptura,point)):
-                    ruptura.append(point)
-            im2 = im.copy()
+                    puntoEntero = np.rint(point)
+                    puntoEntero=puntoEntero.astype(int,copy=True)
+                    ruptura.append(puntoEntero)
+
+    cv2.imshow("mm", im2)
+
+    cv2.destroyAllWindows()
+    im2 = im.copy()
     if(True):
         ruptura = maximizarPuntos(im,ruptura)
         print (ruptura)
@@ -637,7 +663,7 @@ def otrosEjemplos():
 # usoHOG()
 # train()
 # pruebaLineas(None,None)
-lineas("./velocidad.jpg")
+lineas("./rectanguloS.jpg")
 # lineas("./triangulo.jpg")
 # lineas("./rectanguloS.jpg")
 # lineas("./ceda.jpg")
