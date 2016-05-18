@@ -542,14 +542,8 @@ def puntoParecido(lst,pt,ranMin,ranMax,index):
             return True
     return False
 
-def maximizarPuntos(im,list):
-    # >> > from operator import itemgetter
-    # >> > L = [[0, 1, 'f'], [4, 2, 't'], [9, 4, 'afsd']]
-    # >> > sorted(L, key=itemgetter(2))
-    # [[9, 4, 'afsd'], [0, 1, 'f'], [4, 2, 't']]
-    print("------------------------------------------------------")
-    print (list)
-    # sorted(list,key=itemgetter(0))
+def obtenerPuntosAreaExterna(im,list):
+    listaPuntos=[]
     a,b = zip(*list)
     maxY=(map(max, zip(*list)))
     minX=map(min, zip(*list))
@@ -563,12 +557,13 @@ def maximizarPuntos(im,list):
         indicesY.append(puntosEjeY[indice])
     minMaxY = np.amax(indicesY)
     minMax = [x2,minMaxY]
-    ptoMax = np.where(puntosEjeY==y2)
-    indicesX = []
+    ptoMax = np.where(puntosEjeX==x1)
+    indicesY = []
     for indice in ptoMax[0]:
-        indicesX.append(puntosEjeX[indice])
-    minX = np.amax(indicesX)
-    maxMin= [minX,y2]
+        indicesY.append(puntosEjeY[indice])
+    minY = np.amin(indicesY)
+    maxMin= [x1,minY]
+    listaPuntos =[[x1,y1],[x2,y2],minMax,maxMin]
     cv2.circle(im,(maxMin[0],maxMin[1]),4,(255,0,0),-1)
     cv2.circle(im,(int(x1),int(y1)),4,(0,0,255),-1)
     cv2.circle(im,(minMax[0],minMax[1]),4,(255,0,0),-1)
@@ -580,8 +575,19 @@ def maximizarPuntos(im,list):
     # gggg = ara[(ara <(x+2))&(ara >(x-2))]
     # print (colored("el maximo es: ",'red'),(x,y))
     # print (colored("el minimo es: ",'green'),(z,w))
+    return listaPuntos
+
+def maximizarPuntos(im,list):
+    # >> > from operator import itemgetter
+    # >> > L = [[0, 1, 'f'], [4, 2, 't'], [9, 4, 'afsd']]
+    # >> > sorted(L, key=itemgetter(2))
+    # [[9, 4, 'afsd'], [0, 1, 'f'], [4, 2, 't']]
+    print("------------------------------------------------------")
+    print (list)
+    # sorted(list,key=itemgetter(0))
 
 
+    listaPuntos=obtenerPuntosAreaExterna(im,list)
     list.sort(key=itemgetter(0,1), reverse=True)
     print (list)
     auxiliar = []
@@ -663,7 +669,7 @@ def otrosEjemplos():
 # usoHOG()
 # train()
 # pruebaLineas(None,None)
-lineas("./rectanguloS.jpg")
+lineas("./ceda.jpg")
 # lineas("./triangulo.jpg")
 # lineas("./rectanguloS.jpg")
 # lineas("./ceda.jpg")
