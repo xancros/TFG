@@ -1,21 +1,22 @@
 # Author: Jose Miguel Buenaposada 2015.
 # Simple MSER application for traffic sign window proposal generation
+import math
+import os
+from operator import itemgetter
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-import os
-import math
-from operator import itemgetter
 from termcolor import colored
+
+from auxiliar_clases import mathFunctions as Vect
 
 mser = cv2.MSER_create()
 mserTrain = cv2.MSER_create()
-TRAIN_DIR="C:/Users/xancr/Documents/Imgs/Final_Training/Images"
+TRAIN_DIR = "./Training_Images/Training/Images"
 #test_dir = './Final_Test/Images'
 test_dir = './TEST_Calle'
 test_ext = ('.jpg', '.ppm')
-print (cv2.__version__)
-gg = 0
 listDescriptor = []
 listAreas=[]
 #Descriptor FLANN
@@ -29,21 +30,47 @@ flann = cv2.FlannBasedMatcher(indexParams=index_params,searchParams=search_param
 
 bf = cv2.BFMatcher(normType=cv2.NORM_HAMMING)
 
-def contienePunto(puntos,punto):
-    if(len(puntos)>0):
-        r=puntos[-1]
-        x,y,w,h=punto
-        xR,yR,wR,hR=r
-        if(x==xR and y==yR and w==wR and h==hR):
-            return True
-    return False
-#####################
 
+##############################################
+
+def obtenerAreas(imagen, delta, minArea):
+    listaAreas = []
+
+    return listaAreas
 def getHOGDescriptorVisualImage():
     print("parsing")
     ##
 
     ##
+
+
+def imitacionHOG(img):
+    b, g, r = cv2.split(img)
+    cv2.imshow("blue", b)
+    cv2.imshow("green", g)
+    cv2.imshow("red", r)
+    maxB, maxG, maxR = np.amax(b), np.amax(g), np.amax(r)
+    print(maxB, maxG, maxR)
+    cv2.destroyAllWindows()
+    list = np.asanyarray([maxB, maxG, maxR])
+    index = np.where(list >= 200)[0]
+    if (len(index) > 1):
+        print("varios canales juegan")
+        max = np.amax(list)
+        indexMax = np.where(list == max)[0]
+        if (len(indexMax) > 1):
+            return -1
+        return indexMax[0]
+    elif (index[0] == 0):
+        print("la imagen es muy azul")
+        return 0
+    elif (index[0] == 1):
+        print("la imagen es muy verde")
+        return -1
+    else:
+        print("la imagen es roja")
+        return 2
+    return img
 
 def train ():
     indice =0
@@ -55,22 +82,32 @@ def train ():
                 full_path = os.path.join(parcial_path, filename)
                 regions = []
                 I = cv2.imread(full_path)
+                I = cv2.imread("./auxiliar_images/ceda2.jpg")
+                color = imitacionHOG(I)
+                colour = ""
+                if (color == 0):  # azul
+                    colour = "blue"
+                elif (color == 2):  # rojo
+                    colour = "red"
+                lineas(I)
                 trainShape = I.shape
-                pruebaLineas(None,"otro")
+                # pruebaLineas(None,"otro")
                 imageShape = (trainShape[1],trainShape[0])
                 Icopy = I.copy()
                 Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
                 mser.setDelta(2)
+                areas = []
+
                 mser.setMinArea(50)
                 regionsDetected = mser.detectRegions(Igray, None)
                 # rects = [cv2.boundingRect(p.reshape(-1,1,2)) for p in regionsDetected]
                 rects = []
-                areas = []
                 puntos = []
                 aratio = 0
                 areaSuficiente=False
                 xS,yS,wS,hS=0,0,0,0
                 Icopy2=Icopy.copy()
+                print(len(regionsDetected))
                 for p in regionsDetected:
                     rect = cv2.boundingRect(p.reshape(-1, 1, 2))
                     x, y, w, h = rect
@@ -79,82 +116,50 @@ def train ():
                     C = y
                     D = y+h
 
+
                     # print ("W/H ==> ",(w/h))
                     # hay que hacer un filtro como el de aspect ratio pero con la aparencia de los puntos(x,y,w,h)
                     if (float(w) / float(h) > 1.2) or (float(w) / float(h) < 0.8):
                         continue
-                    if(not contienePunto(rects,rect)):
-                        if (w==h):
-                            if(w-x>=30 and h-y>=30):
-                                print(colored("El area es suficientemente grande",'green'))
-                                # cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
-                                areaSuficiente=True
-                                # xS,yS,wS,hS=rect
-                                rects.append(rect)
-                            else:
-                                continue
-                                # print(colored("El area seleccionada es la imagen", 'red'))
-                                #cv2.rectangle(Icopy, (0, 0), (trainShape[0], trainShape[1]), (0, 255, 0), thickness=1)
+
+                    if (not Vect.contienePunto(rects, rect)):
+
+                        # print (w*h)
+                        # cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
+                        # cv2.imshow("area", Icopy)
+                        # cv2.waitKey()
+                        # cv2.destroyWindow("area")
+                        # Icopy = Icopy2.copy()
 
 
-                            # print (rect)
+                        xS, yS, wS, hS = x, y, w, h
+                        nuevaImagen = I[xS:xS + wS, yS:yS + hS]
+
+                        ## pasar HOG a la nuevaImagen y si pasa el filtro de los colores, buscar lineas/circulos
+                        cv2.imshow("original", I)
+                        cv2.imshow("nuevaImagen", nuevaImagen)
+                        # cv2.waitKey()
+                        cv2.destroyAllWindows()
+                        # pruebaCirculo(nuevaImagen,filename)
+                        # xS,yS,wS,hS=rect
+                        color = imitacionHOG(nuevaImagen)
+                        colour = ""
+                        if (color == 0):  # azul
+                            colour = "blue"
+                        elif (color == 2):  # rojo
+                            colour = "red"
+                        lineas(nuevaImagen)
+                        rects.append(rect)
 
 
-                print(colored(full_path, 'green'))
-
-                if(areaSuficiente):
-                    # cv2.imshow("area", Icopy)
-                    # cv2.waitKey()
-                    # cv2.destroyWindow("area")
-                    # Icopy = Icopy2.copy()
-                    min = trainShape[0]*trainShape[1]
-                    for x,y,w,h in rects:
-                        area=w*h
-                        if(area<min):
-                            min=area
-                            xS,yS,wS,hS=x,y,w,h
-                    nuevaImagen = I[xS:xS + wS, yS:yS + hS]
-                    cv2.imshow("original",I)
-                    cv2.imshow("nuevaImagen",nuevaImagen)
-                    cv2.waitKey()
-                    cv2.destroyAllWindows()
-                    pruebaCirculo(nuevaImagen,filename)
-                else:
-
-                    pruebaCirculo(I,filename)
-
-def prueba(im):
-    im2 = im.copy()
-    dst = cv2.Canny(im2,50,200,3)
-    cdst=cv2.cvtColor(dst,cv2.COLOR_GRAY2BGR)
-    lineas = cv2.HoughLines(dst,1,np.pi/180,150,0,0)
-
-    for i in range(len(lineas)):
-        # rho,theta = i[0]
-        # a = math.cos(theta)
-        # b = math.sin(theta)
-        # x0, y0 = a * rho, b * rho
-        # pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
-        # pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-        rho,theta = lineas[i][0]
-
-        a = math.cos(theta)
-        b = math.sin(theta)
-        x0 = a*rho
-        y0 = b*rho
-        x=int(x0+1000*(-b))
-        y=int(y0+1000*(a))
-        w=int(x0-1000*(-b))
-        h=int(y0-1000*(a))
-        cv2.line(cdst,(x,y),(w,h),(0,255,0),1,cv2.LINE_AA)
-    cv2.imshow("original",im2)
-    cv2.imshow("lineas",cdst)
-    cv2.destroyAllWindows()
 def lineas(imageName=None):
-    if(imageName is None):
-        fn = cv2.imread("./ceda.jpg")
+    if (isinstance(imageName, str)):
+        if (imageName is None):
+            fn = cv2.imread("./ceda.jpg")
+        else:
+            fn = cv2.imread(imageName)
     else:
-        fn = cv2.imread(imageName)
+        fn = imageName
     # src = cv2.imread(fn)
     src = fn.copy()
     imShape = fn.shape
@@ -178,13 +183,8 @@ def lineas(imageName=None):
         x0, y0 = a * rho, b * rho
         pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
         pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-        # pt1 = (abs(int(x0 + imShape[0] * (-b))), int(y0 + imShape[1] * (a)))
-        # pt2 = (abs(int(x0 - imShape[1] * (-b))), int(y0 - imShape[0] * (a)))
         punto = np.array([pt1,pt2])
         linesConverted.append(punto)
-        # cv2.circle(src,pt1,4,(255,0,0),-1)
-        # cv2.circle(src,pt2,4,(0,255,0),-1)
-        # cv2.line(src, pt1, pt2, (0, 0, 255), 1, cv2.LINE_AA)
         # cv2.imshow("mm",src)
         # # cv2.waitKey(2000)
         # cv2.destroyAllWindows()
@@ -196,68 +196,7 @@ def lineas(imageName=None):
     cv2.imshow("source", fn)
     # cv2.imshow("detected lines", cdst)
     cv2.waitKey()
-def otracosa():
-    gg=0
-    indice = 0
-    for filename in os.listdir(test_dir):
-        if os.path.splitext(filename)[1].lower() in test_ext:
-            print ("Test, processing ", filename, "\n")
-            full_path = os.path.join(test_dir, filename)
-            regions=[]
-            I = cv2.imread(full_path)
-            # cv2.imshow("vn",I)
-            # cv2.waitKey()
-            # cv2.destroyWindow("vn")
-            Icopy = I.copy()
-            Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
-            mser.setDelta(2)
-            mser.setMinArea(200)
-            regionsDetected = mser.detectRegions(Igray,None)
-            #rects = [cv2.boundingRect(p.reshape(-1,1,2)) for p in regionsDetected]
-            rects = []
-            areas = []
-            puntos = []
-            aratio = 0
-            for p in regionsDetected:
-                rect = cv2.boundingRect(p.reshape(-1,1,2))
-                x,y,w,h = rect
-                #hay que hacer un filtro como el de aspect ratio pero con la aparencia de los puntos(x,y,w,h)
 
-                    # Simple aspect ratio filtering
-                if (float(w) / float(h) > 1.2) or (float(w) / float(h) < 0.8):
-                    continue
-                if(not contienePunto(puntos,rect)):
-                    cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
-                    #nueva2Cut = nueva2[y1:y1 + y2, x1:x1 + x2]
-                    nuevaImagen=I[y:y+h,x:x+w]
-                    # cv2.imshow("area",nuevaImagen)
-                    # cv2.waitKey()
-                    # cv2.destroyWindow("area")
-                    areas.append(nuevaImagen)
-                    puntos.append(rect)
-                    regions.append(p)
-
-            cv2.imshow('img', Icopy)
-            oldPoint = 0,0
-            for area in areas:
-                a,b,c,d = puntos[indice]
-                newPoint = a,b
-                if(oldPoint!=newPoint):
-                    cv2.imshow("area",area)
-                    cv2.waitKey()
-                    cv2.destroyWindow("area")
-                    print("punto obtenido en el area: \n", puntos[indice])
-                    oldPoint=newPoint
-                else:
-                    print(newPoint," = ", oldPoint)
-                indice+=1
-            # cv2.waitKey()
-            # cv2.destroyWindow("img")
-            indice = 0
-            if(gg==5):
-                break
-            else:
-                gg+=1
 def limpiarImagen(bgr_img,shapeName):
     if(shapeName=="circulo"):
         if bgr_img.shape[-1] == 3:  # color image
@@ -476,71 +415,6 @@ def find_squares(img):
                         squares.append(cnt)
     return squares
 
-def perp( a ) :
-    b = np.empty_like(a)
-    b[0] = -a[1]
-    b[1] = a[0]
-    return b
-
-# line segment a given by endpoints a1, a2
-# line segment b given by endpoints b1, b2
-# return
-def seg_intersect(a1,a2, b1,b2) :
-    da = a2-a1
-    db = b2-b1
-    dp = a1-b1
-    dap = perp(da)
-    denom = np.dot( dap, db)
-    num = np.dot( dap, dp )
-    output = (num / denom.astype(float))*db + b1
-    return output
-    # return int(math.ceil((num / denom.astype(float))*db + b1))
-
-p1 = np.array( [0, 3] )
-p2 = np.array( [1, 5] )
-
-p3 = np.array( [0, 5] )
-p4 = np.array( [1, 2] )
-
-
-def det(a, b):
-    return a[0] * b[1] - a[1] * b[0]
-
-def line_intersection(line1,line2):
-    xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-    ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])  # Typo was here
-
-
-    div = det(xdiff, ydiff)
-    if div == 0:
-        raise Exception('lines do not intersect')
-
-    d = (det(*line1), det(*line2))
-    x = det(d, xdiff) / div
-    y = det(d, ydiff) / div
-    return x, y
-def estaPuntoenLista(list,ndarray):
-    for p in list:
-        if(p[0]==ndarray[0] and p[1]==ndarray[1]):
-            return True
-    return False
-
-def puntoParecido(lst,pt,ranMin,ranMax,index):
-    # print(colored(pt,'red'))
-    for lastPoint in lst:
-    # lastPoint = lst[index]
-        if(lastPoint[0]==0 and lastPoint[1]==0):
-            return False
-        YminRan = lastPoint[0]-ranMin
-        XminRan = lastPoint[1]-ranMin
-        YmaxRan = lastPoint[0]+ranMax
-        XmaxRan = lastPoint[1]+ranMax
-        enRangoY = (YminRan<=pt[0] and YmaxRan>=pt[0])
-        enRangoX = (XminRan<=pt[1] and XmaxRan>=pt[1])
-        if( enRangoY and enRangoX ):
-            #esta dentro del rango por lo que no se añade
-            return True
-    return False
 
 def obtenerPuntosAreaExterna(im,list):
     listaPuntos=[]
@@ -549,7 +423,10 @@ def obtenerPuntosAreaExterna(im,list):
     minX=map(min, zip(*list))
     x1,y1 = maxY
     x2,y2 = minX
-
+    cv2.circle(im, (int(x1), int(y1)), 4, (0, 0, 255), -1)
+    cv2.circle(im, (int(x2), int(y2)), 4, (0, 255, 0), -1)
+    cv2.imshow("mmm", im)
+    cv2.destroyAllWindows()
     puntosEjeX,puntosEjeY = np.asarray(a),np.asarray(b)
     ptoMin = np.where(puntosEjeX==x2)
     indicesY = []
@@ -565,12 +442,22 @@ def obtenerPuntosAreaExterna(im,list):
     maxMin= [x1,minY]
     listaPuntos =[[x1,y1],[x2,y2],minMax,maxMin]
     cv2.circle(im,(maxMin[0],maxMin[1]),4,(255,0,0),-1)
-    cv2.circle(im,(int(x1),int(y1)),4,(0,0,255),-1)
+
     cv2.circle(im,(minMax[0],minMax[1]),4,(255,0,0),-1)
-    cv2.circle(im,(int(x2),int(y2)),4,(0,255,0),-1)
+
     # cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
     cv2.imshow("mmm",im)
     cv2.destroyAllWindows()
+    listaPuntosFinal = Vect.limpiarPuntosDobles(listaPuntos)
+    pts = len(listaPuntosFinal)
+    if (pts < 3):
+        print("circle")
+    elif (pts == 3):
+        print("triangle")
+    elif (pts == 4):
+        print("square")
+    else:
+        print("other shape")
     # print ("el punto en el eje X minimo es :",z," el punto encontrado es :",puntosEjeX[ptoMin[0][0]])
     # gggg = ara[(ara <(x+2))&(ara >(x-2))]
     # print (colored("el maximo es: ",'red'),(x,y))
@@ -583,9 +470,13 @@ def maximizarPuntos(im,list):
     # >> > sorted(L, key=itemgetter(2))
     # [[9, 4, 'afsd'], [0, 1, 'f'], [4, 2, 't']]
     print("------------------------------------------------------")
-    print (list)
+    print(list)
+    ima = im.copy()
     # sorted(list,key=itemgetter(0))
-
+    for pt in list:
+        cv2.circle(ima, (pt[0], pt[1]), 3, (255, 0, 0), -1)
+    cv2.imshow("aaa", ima)
+    cv2.destroyAllWindows()
 
     listaPuntos=obtenerPuntosAreaExterna(im,list)
     list.sort(key=itemgetter(0,1), reverse=True)
@@ -598,7 +489,7 @@ def maximizarPuntos(im,list):
     index = 0
     for pt in list:
         x, y = pt
-        if(not puntoParecido(shape,pt,20,20,index)):
+        if (not Vect.puntoParecido(shape, pt, 20, 20, index)):
             cv2.circle(im2, (int(x), int(y)), 4, (0, 255, 0), -1)
             cv2.imshow("mm", im2)
             cv2.destroyAllWindows()
@@ -626,17 +517,15 @@ def acumularPuntosInterseccion(lines,im):
             x10,y10 = linea2[0]
             x11, y11 = linea2[1]
             cv2.line(im2,(int(x00),int(y00)),(int(x01),int(y01)),(255,0,0),1,cv2.LINE_AA)
-            cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)),(255,0,0) ,1, cv2.LINE_AA)
+            cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)), (255, 0, 0), 1, cv2.LINE_AA)
 
-
-
-            point = seg_intersect(lines[i][0],lines[i][1],lines[j][0],lines[j][1])
+            point = Vect.seg_intersect(lines[i][0], lines[i][1], lines[j][0], lines[j][1])
             # if(point[0]>0):
             #     cv2.circle(im2, (int(point[0]), int(point[1])), 4, (0, 255, 0), -1)
             #     cv2.imshow("mm", im2)
             #     cv2.destroyAllWindows()
             if(point[0]>=0 and point[1] >=0 and point[1]<imShape[0] and point[0]<imShape[1]):
-                if(not estaPuntoenLista(ruptura,point)):
+                if (not Vect.estaPuntoenLista(ruptura, point)):
                     puntoEntero = np.rint(point)
                     puntoEntero=puntoEntero.astype(int,copy=True)
                     ruptura.append(puntoEntero)
@@ -667,9 +556,10 @@ def otrosEjemplos():
     cv2.destroyAllWindows()
 # otrosEjemplos()
 # usoHOG()
-# train()
+
+train()
 # pruebaLineas(None,None)
-lineas("./ceda.jpg")
+# lineas("./ceda.jpg")
 # lineas("./triangulo.jpg")
 # lineas("./rectanguloS.jpg")
 # lineas("./ceda.jpg")
