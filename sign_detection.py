@@ -6,9 +6,8 @@ from operator import itemgetter
 
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
-from termcolor import colored
 
+from auxiliar_clases import graphic_features as graph
 from auxiliar_clases import mathFunctions as Vect
 
 mser = cv2.MSER_create()
@@ -32,16 +31,6 @@ bf = cv2.BFMatcher(normType=cv2.NORM_HAMMING)
 
 
 ##############################################
-
-def obtenerAreas(imagen, delta, minArea):
-    listaAreas = []
-
-    return listaAreas
-def getHOGDescriptorVisualImage():
-    print("parsing")
-    ##
-
-    ##
 
 
 def imitacionHOG(img):
@@ -168,8 +157,8 @@ def lineas(imageName=None):
     # ah=cv2.imread(imageName,0)
     # prueba(ah)
     # cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
-
-    lines = cv2.HoughLines(dst,1,np.pi/180,100)
+    print(fn.shape)
+    lines = cv2.HoughLines(dst, 1, np.pi / 180, 75)
     # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
     a, b, c = lines.shape
     # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
@@ -183,6 +172,9 @@ def lineas(imageName=None):
         x0, y0 = a * rho, b * rho
         pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
         pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+        cv2.line(src, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
+        cv2.imshow("line", src)
+        cv2.destroyAllWindows()
         punto = np.array([pt1,pt2])
         linesConverted.append(punto)
         # cv2.imshow("mm",src)
@@ -266,74 +258,7 @@ def pruebaLineas(im,imageName):
 
 
 
-def pruebaCirculo(im,imageName):
-    if(im is None):
-        bgr_img = cv2.imread('./test2.jpg')  # read as it is
-    elif(isinstance(im,str)):
-        bgr_img = cv2.imread(im)
-    else:
-        bgr_img = im.copy()
 
-       # bgr_img = cv2.imread("C:/Users/xancr/Documents/Imgs/Final_Training/Images/00000/00000_00000.ppm")
-    # cv2.imshow("im",bgr_img)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    # if bgr_img.shape[-1] == 3:  # color image
-    #     b, g, r = cv2.split(bgr_img)  # get b,g,r
-    #     rgb_img = cv2.merge([r, g, b])  # switch it to rgb
-    #     gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-    # else:
-    #     gray_img = bgr_img
-    # imagen = rgb_img.copy()
-    # # img = cv2.medianBlur(gray_img, 5)
-    # img = cv2.GaussianBlur(gray_img,(9,9),2,sigmaY=2)
-    imagen,img = limpiarImagen(bgr_img,"circulo")
-    rgb_img = imagen.copy()
-    cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-
-    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 2, 100,
-                               param1=10, param2=10, minRadius=0, maxRadius=0)
-    if (circles is not None):
-        circles = np.uint16(np.around(circles))
-
-        for i in circles[0, :]:
-            # draw the outer circle
-            cv2.circle(imagen, (i[0], i[1]), i[2], (0, 255, 0), 1)
-            # draw the center of the circle
-            cv2.circle(imagen, (i[0], i[1]), 1, (0, 0, 255), 2)
-
-        # cv2.imshow("im",imagen)
-        # cv2.waitKey()
-        # cv2.destroyAllWindows()
-        plt.figure(imageName)
-        plt.subplot(121), plt.imshow(rgb_img)
-        plt.title('Input Image'), plt.xticks([]), plt.yticks([])
-        plt.subplot(122), plt.imshow(imagen)
-        plt.title('Hough Transform'), plt.xticks([]), plt.yticks([])
-        plt.show()
-
-    else:
-        print (colored("NO hay circulos",'red'))
-
-def detectarCirculo(imagen):
-    print("detectar circulo")
-    #image = cv2.imread("image.jpg", cv2.IMREAD_GRAYSCALE)
-    imBN=cv2.imread("./test2.jpg",cv2.IMREAD_GRAYSCALE)
-    (thresh, im_bw) = cv2.threshold(imBN, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    # cv2.imshow("bnn",im_bw)
-    # cv2.imshow("bn",imBN)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    circles = cv2.HoughCircles(im_bw,cv2.HOUGH_GRADIENT,1,20,param1=50,param2=30,minRadius=0,maxRadius=0)
-    circles = np.uint16(np.around(circles))
-    for i in circles[0,:]:
-        #draw the outer circle
-        cv2.circle(imBN,(i[0],i[1]),i[2],(0,255,0),2)
-        #draw the center of the circle
-        cv2.circle(imBN,(i[0],i[1]),2,(0,0,255),3)
-    cv2.imshow('detected circles',imBN)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
 
 def usoHOG(img=None):
     if(img==None):
@@ -390,44 +315,65 @@ def usoHOG(img=None):
     # print (hist)
 
 
-def angle_cos(p0, p1, p2):
-    d1, d2 = (p0-p1).astype('float'), (p2-p1).astype('float')
-    return abs( np.dot(d1, d2) / np.sqrt( np.dot(d1, d1)*np.dot(d2, d2) ) )
+def obtenerPuntoParecido(ListaPuntos, punto, Maximo=True):
+    a, b = zip(*ListaPuntos)
+    puntosEjeX, puntosEjeY = np.asarray(a), np.asarray(b)
+    ptX, ptY = punto
+    listaIndicesX, listaPuntosY = []
+    minX = punto[0] - 3
+    maxX = punto[0] + 3
+    index = 0
+    puntoObtenido = ()
+    for x in puntosEjeX:
+        if (x >= minX and x <= maxX):
+            listaIndicesX.append(index)
+        index += 1
+    for i in index:
+        listaPuntosY.append(puntosEjeY[i])
 
-def find_squares(img):
-    img = cv2.GaussianBlur(img, (5, 5), 0)
-    squares = []
-    for gray in cv2.split(img):
-        for thrs in range(0, 255, 26):
-            if thrs == 0:
-                bin = cv2.Canny(gray, 0, 50, apertureSize=5)
-                bin = cv2.dilate(bin, None)
-            else:
-                retval, bin = cv2.threshold(gray, thrs, 255, cv2.THRESH_BINARY)
-            bin, contours, hierarchy = cv2.findContours(bin, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-            for cnt in contours:
-                cnt_len = cv2.arcLength(cnt, True)
-                cnt = cv2.approxPolyDP(cnt, 0.02*cnt_len, True)
-                if len(cnt) == 4 and cv2.contourArea(cnt) > 1000 and cv2.isContourConvex(cnt):
-                    cnt = cnt.reshape(-1, 2)
-                    max_cos = np.max([angle_cos( cnt[i], cnt[(i+1) % 4], cnt[(i+2) % 4] ) for i in range(4)])
-                    if max_cos < 0.1:
-                        squares.append(cnt)
-    return squares
+    if (Maximo):
+        maximoY = np.amax(listaPuntosY)
+        indices = np.where(listaPuntosY == maximoY)[0]
 
+    else:
+        minimoY = np.amin(listaPuntosY)
+        indices = np.where(listaPuntosY == minimoY)
+    puntoObtenido = (punto[0], listaPuntosY[indices[0]])
+    return puntoObtenido
+
+
+##
 
 def obtenerPuntosAreaExterna(im,list):
+    # probar a hacer una búsqueda por altura en los puntos y despues buscar maximo y minimo de X en rango de +-3 o asi
+    pt = list[0]
+    # cv2.circle(im,(pt[0],pt[1]),2,(255,0,0),-1)
+
+    list.sort(key=lambda tup: tup[1])
+    mini = list[0]
+    minValueY = mini[1]
+    # cv2.circle(im,(mini[0],mini[1]),4,(0,0,255),-1)
+    # cv2.imshow("ha",im)
+    a, b = zip(*list)
+    puntosEjeX, puntosEjeY = np.asarray(a), np.asarray(b)
+    listaIndicesY = np.where((list <= minValueY + 3) & (list >= minValueY - 3))[0]
+
+
     listaPuntos=[]
-    a,b = zip(*list)
+
     maxY=(map(max, zip(*list)))
     minX=map(min, zip(*list))
     x1,y1 = maxY
     x2,y2 = minX
+    esquinaDer = [x1, y2]
+    esquinaIz = [x2, y1]
+
     cv2.circle(im, (int(x1), int(y1)), 4, (0, 0, 255), -1)
     cv2.circle(im, (int(x2), int(y2)), 4, (0, 255, 0), -1)
     cv2.imshow("mmm", im)
     cv2.destroyAllWindows()
-    puntosEjeX,puntosEjeY = np.asarray(a),np.asarray(b)
+    pt1 = obtenerPuntoParecido(list, esquinaIz)
+
     ptoMin = np.where(puntosEjeX==x2)
     indicesY = []
     for indice in ptoMin[0]:
@@ -447,7 +393,7 @@ def obtenerPuntosAreaExterna(im,list):
 
     # cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
     cv2.imshow("mmm",im)
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
     listaPuntosFinal = Vect.limpiarPuntosDobles(listaPuntos)
     pts = len(listaPuntosFinal)
     if (pts < 3):
@@ -476,7 +422,7 @@ def maximizarPuntos(im,list):
     for pt in list:
         cv2.circle(ima, (pt[0], pt[1]), 3, (255, 0, 0), -1)
     cv2.imshow("aaa", ima)
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
 
     listaPuntos=obtenerPuntosAreaExterna(im,list)
     list.sort(key=itemgetter(0,1), reverse=True)
@@ -532,7 +478,7 @@ def acumularPuntosInterseccion(lines,im):
 
     cv2.imshow("mm", im2)
 
-    cv2.destroyAllWindows()
+    #cv2.destroyAllWindows()
     im2 = im.copy()
     if(True):
         ruptura = maximizarPuntos(im,ruptura)
@@ -549,7 +495,7 @@ def acumularPuntosInterseccion(lines,im):
 
 def otrosEjemplos():
     img = cv2.imread("./rect2.png")
-    squares = find_squares(img)
+    squares = graph.find_squares(img)
     cv2.drawContours(img, squares, -1, (0, 255, 0), 3)
     cv2.imshow('squares', img)
     cv2.waitKey()
