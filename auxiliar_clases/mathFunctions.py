@@ -54,12 +54,25 @@ def angle_cos(p0, p1, p2):
     return abs(np.dot(d1, d2) / np.sqrt(np.dot(d1, d1) * np.dot(d2, d2)))
 
 
-def puntoParecido(lst, pt, ranMin, ranMax, index):
+def LimpiarPuntosParecidos(lst, ranMin, ranMax):
+    puntoParecido = []
+    for punto in lst:
+        if (EsPuntoParecido(lst, punto, ranMin, ranMax, 0)):
+            puntoParecido.append(punto)
+            lst.remove(punto)
+
+    return puntoParecido
+
+
+def EsPuntoParecido(lst, pt, ranMin, ranMax, index):
     # print(colored(pt,'red'))
+    puntoParecido = []
     for lastPoint in lst:
         # lastPoint = lst[index]
         if (lastPoint[0] == 0 and lastPoint[1] == 0):
             return False
+        if (lastPoint[0] == pt[0] and lastPoint[1] == pt[1]):
+            continue
         YminRan = lastPoint[0] - ranMin
         XminRan = lastPoint[1] - ranMin
         YmaxRan = lastPoint[0] + ranMax

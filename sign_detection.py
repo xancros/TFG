@@ -189,30 +189,7 @@ def lineas(imageName=None):
     # cv2.imshow("detected lines", cdst)
     cv2.waitKey()
 
-def limpiarImagen(bgr_img,shapeName):
-    if(shapeName=="circulo"):
-        if bgr_img.shape[-1] == 3:  # color image
-            b, g, r = cv2.split(bgr_img)  # get b,g,r
-            rgb_img = cv2.merge([r, g, b])  # switch it to rgb
-            gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-        else:
-            gray_img = bgr_img
-        # img = cv2.medianBlur(gray_img, 5)
-        img = cv2.GaussianBlur(gray_img, (9, 9), 2, sigmaY=2)
-        cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        return (rgb_img.copy(),img)
-    else:
-        if bgr_img.shape[-1] == 3:  # color image
-            b, g, r = cv2.split(bgr_img)  # get b,g,r
-            rgb_img = cv2.merge([r, g, b])  # switch it to rgb
-            gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-        else:
-            gray_img = bgr_img
-        # img = cv2.medianBlur(gray_img, 5)
-        img = cv2.GaussianBlur(gray_img, (9, 9), 2, sigmaY=2)
-        img= cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,75,10)
-        img = cv2.bitwise_not(img)
-        return (rgb_img.copy(),img)
+
 
 def pruebaLineas(im,imageName):
     if(im is None):
@@ -224,7 +201,7 @@ def pruebaLineas(im,imageName):
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-    imagen,img = limpiarImagen(bgr_img,"otro")
+    imagen, img = graph.limpiarImagen(bgr_img, "otro")
     rgb_img = imagen.copy()
     cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
     lineas = cv2.HoughLinesP(img,1, 3.14/180, 80, 100, 10)
@@ -351,50 +328,76 @@ def obtenerPuntosAreaExterna(im,list):
 
     list.sort(key=lambda tup: tup[1])
     mini = list[0]
+    maxi = list[-1]
+    maxValueY = maxi[1]
     minValueY = mini[1]
     # cv2.circle(im,(mini[0],mini[1]),4,(0,0,255),-1)
     # cv2.imshow("ha",im)
     a, b = zip(*list)
     puntosEjeX, puntosEjeY = np.asarray(a), np.asarray(b)
-    listaIndicesY = np.where((list <= minValueY + 3) & (list >= minValueY - 3))[0]
+    listaIndicesYMin = np.where((puntosEjeY > minValueY - 5) & (puntosEjeY <= minValueY + 5))[0]
+    listaIndicesYMax = np.where((puntosEjeY > maxValueY - 5) & (puntosEjeY <= maxValueY + 5))[0]
+    listaValores = []
+    listaValoresMaximos = []
+    for index in listaIndicesYMax:
+        listaValoresMaximos.append(list[index])
+    maximo = map(max, zip(*listaValoresMaximos))
+    # graph.getAndDrawPoints(im,listaIndicesYMax,list)
+    for index in listaIndicesYMin:
+        listaValores.append(list[index])
+    minimo = map(min, zip(*listaValores))
+    # graph.getAndDrawPoints(im,listaIndicesY,list)
+    MinXY = minimo
+    maximoXY = maximo
+    listas = [MinXY, maximoXY]
+    MaxYminX = map(min, zip(*listaValoresMaximos))
+    listas.append(MaxYminX)
+    MinYMaxX = map(max, zip(*listaValores))
+    listas.append(MinYMaxX)
+    # graph.drawPoints(im,listas)
+    # listaPuntos=[]
+    #
+    # maxY=(map(max, zip(*list)))
+    # minX=map(min, zip(*list))
+    # x1,y1 = maxY
+    # x2,y2 = minX
+    # esquinaDer = [x1, y2]
+    # esquinaIz = [x2, y1]
+    #
+    # cv2.circle(im, (int(x1), int(y1)), 4, (0, 0, 255), -1)
+    # cv2.circle(im, (int(x2), int(y2)), 4, (0, 255, 0), -1)
+    # cv2.imshow("mmm", im)
+    # cv2.destroyAllWindows()
+    # pt1 = obtenerPuntoParecido(list, esquinaIz)
+    #
+    # ptoMin = np.where(puntosEjeX==x2)
+    # indicesY = []
+    # for indice in ptoMin[0]:
+    #     indicesY.append(puntosEjeY[indice])
+    # minMaxY = np.amax(indicesY)
+    # minMax = [x2,minMaxY]
+    # ptoMax = np.where(puntosEjeX==x1)
+    # indicesY = []
+    # for indice in ptoMax[0]:
+    #     indicesY.append(puntosEjeY[indice])
+    # minY = np.amin(indicesY)
+    # maxMin= [x1,minY]
+    # listaPuntos =[[x1,y1],[x2,y2],minMax,maxMin]
+    # cv2.circle(im,(maxMin[0],maxMin[1]),4,(255,0,0),-1)
+    #
+    # cv2.circle(im,(minMax[0],minMax[1]),4,(255,0,0),-1)
+    #
+    # # cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
+    # cv2.imshow("mmm",im)
+    # #cv2.destroyAllWindows()
+    listaPuntos = []
+    for punto in listas:
+        x, y = punto
+        listaPuntos.append([x, y])
 
-
-    listaPuntos=[]
-
-    maxY=(map(max, zip(*list)))
-    minX=map(min, zip(*list))
-    x1,y1 = maxY
-    x2,y2 = minX
-    esquinaDer = [x1, y2]
-    esquinaIz = [x2, y1]
-
-    cv2.circle(im, (int(x1), int(y1)), 4, (0, 0, 255), -1)
-    cv2.circle(im, (int(x2), int(y2)), 4, (0, 255, 0), -1)
-    cv2.imshow("mmm", im)
-    cv2.destroyAllWindows()
-    pt1 = obtenerPuntoParecido(list, esquinaIz)
-
-    ptoMin = np.where(puntosEjeX==x2)
-    indicesY = []
-    for indice in ptoMin[0]:
-        indicesY.append(puntosEjeY[indice])
-    minMaxY = np.amax(indicesY)
-    minMax = [x2,minMaxY]
-    ptoMax = np.where(puntosEjeX==x1)
-    indicesY = []
-    for indice in ptoMax[0]:
-        indicesY.append(puntosEjeY[indice])
-    minY = np.amin(indicesY)
-    maxMin= [x1,minY]
-    listaPuntos =[[x1,y1],[x2,y2],minMax,maxMin]
-    cv2.circle(im,(maxMin[0],maxMin[1]),4,(255,0,0),-1)
-
-    cv2.circle(im,(minMax[0],minMax[1]),4,(255,0,0),-1)
-
-    # cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
-    cv2.imshow("mmm",im)
-    #cv2.destroyAllWindows()
     listaPuntosFinal = Vect.limpiarPuntosDobles(listaPuntos)
+    PuntosParecidos = Vect.LimpiarPuntosParecidos(listaPuntosFinal, 20, 20)
+
     pts = len(listaPuntosFinal)
     if (pts < 3):
         print("circle")
@@ -408,7 +411,8 @@ def obtenerPuntosAreaExterna(im,list):
     # gggg = ara[(ara <(x+2))&(ara >(x-2))]
     # print (colored("el maximo es: ",'red'),(x,y))
     # print (colored("el minimo es: ",'green'),(z,w))
-    return listaPuntos
+    # return listaPuntos
+    return listas
 
 def maximizarPuntos(im,list):
     # >> > from operator import itemgetter
@@ -435,7 +439,7 @@ def maximizarPuntos(im,list):
     index = 0
     for pt in list:
         x, y = pt
-        if (not Vect.puntoParecido(shape, pt, 20, 20, index)):
+        if (not Vect.EsPuntoParecido(shape, pt, 20, 20, index)):
             cv2.circle(im2, (int(x), int(y)), 4, (0, 255, 0), -1)
             cv2.imshow("mm", im2)
             cv2.destroyAllWindows()

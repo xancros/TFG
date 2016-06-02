@@ -5,12 +5,49 @@ from matplotlib import pyplot as plt
 from auxiliar_clases import mathFunctions as Vect
 
 
-def drawPoints(image, listIndex, list, ShowImage=True):
+def drawPoints(image, listPoints):
+    for point in listPoints:
+        x, y = point
+        pt = (x, y)
+        cv2.circle(image, pt, 3, (255, 0, 0), -1)
+    cv2.imshow("Points in list", image)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
+
+
+def getAndDrawPoints(image, listIndex, list, ShowImage=True):
     for index in listIndex:
         pt = (list[index][0], list[index][1])
         cv2.circle(image, pt, 3, (255, 0, 0), -1)
     cv2.imshow("Points in list", image)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
 
+
+def limpiarImagen(bgr_img, shapeName):
+    if (shapeName == "circulo"):
+        if bgr_img.shape[-1] == 3:  # color image
+            b, g, r = cv2.split(bgr_img)  # get b,g,r
+            rgb_img = cv2.merge([r, g, b])  # switch it to rgb
+            gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_img = bgr_img
+        # img = cv2.medianBlur(gray_img, 5)
+        img = cv2.GaussianBlur(gray_img, (9, 9), 2, sigmaY=2)
+        cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        return (rgb_img.copy(), img)
+    else:
+        if bgr_img.shape[-1] == 3:  # color image
+            b, g, r = cv2.split(bgr_img)  # get b,g,r
+            rgb_img = cv2.merge([r, g, b])  # switch it to rgb
+            gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_img = bgr_img
+        # img = cv2.medianBlur(gray_img, 5)
+        img = cv2.GaussianBlur(gray_img, (9, 9), 2, sigmaY=2)
+        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 75, 10)
+        img = cv2.bitwise_not(img)
+        return (rgb_img.copy(), img)
 
 def pruebaCirculo(im, imageName):
     if (im is None):
@@ -59,7 +96,7 @@ def pruebaCirculo(im, imageName):
         plt.show()
 
     else:
-        print(colored("NO hay circulos", 'red'))
+        print(("NO hay circulos"))
 
 
 def detectarCirculo(imagen):
