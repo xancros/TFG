@@ -71,7 +71,7 @@ def train ():
                 full_path = os.path.join(parcial_path, filename)
                 regions = []
                 I = cv2.imread(full_path)
-                I = cv2.imread("./auxiliar_images/ceda2.jpg")
+                I = cv2.imread("./auxiliar_images/velocidad.jpg")
                 color = imitacionHOG(I)
                 colour = ""
                 if (color == 0):  # azul
@@ -342,11 +342,11 @@ def obtenerPuntosAreaExterna(im,list):
     for index in listaIndicesYMax:
         listaValoresMaximos.append(list[index])
     maximo = map(max, zip(*listaValoresMaximos))
-    # graph.getAndDrawPoints(im,listaIndicesYMax,list)
+    graph.getAndDrawPoints(im, listaIndicesYMax, list)
     for index in listaIndicesYMin:
         listaValores.append(list[index])
     minimo = map(min, zip(*listaValores))
-    # graph.getAndDrawPoints(im,listaIndicesY,list)
+    graph.getAndDrawPoints(im, listaIndicesYMin, list)
     MinXY = minimo
     maximoXY = maximo
     listas = [MinXY, maximoXY]
@@ -354,42 +354,6 @@ def obtenerPuntosAreaExterna(im,list):
     listas.append(MaxYminX)
     MinYMaxX = map(max, zip(*listaValores))
     listas.append(MinYMaxX)
-    # graph.drawPoints(im,listas)
-    # listaPuntos=[]
-    #
-    # maxY=(map(max, zip(*list)))
-    # minX=map(min, zip(*list))
-    # x1,y1 = maxY
-    # x2,y2 = minX
-    # esquinaDer = [x1, y2]
-    # esquinaIz = [x2, y1]
-    #
-    # cv2.circle(im, (int(x1), int(y1)), 4, (0, 0, 255), -1)
-    # cv2.circle(im, (int(x2), int(y2)), 4, (0, 255, 0), -1)
-    # cv2.imshow("mmm", im)
-    # cv2.destroyAllWindows()
-    # pt1 = obtenerPuntoParecido(list, esquinaIz)
-    #
-    # ptoMin = np.where(puntosEjeX==x2)
-    # indicesY = []
-    # for indice in ptoMin[0]:
-    #     indicesY.append(puntosEjeY[indice])
-    # minMaxY = np.amax(indicesY)
-    # minMax = [x2,minMaxY]
-    # ptoMax = np.where(puntosEjeX==x1)
-    # indicesY = []
-    # for indice in ptoMax[0]:
-    #     indicesY.append(puntosEjeY[indice])
-    # minY = np.amin(indicesY)
-    # maxMin= [x1,minY]
-    # listaPuntos =[[x1,y1],[x2,y2],minMax,maxMin]
-    # cv2.circle(im,(maxMin[0],maxMin[1]),4,(255,0,0),-1)
-    #
-    # cv2.circle(im,(minMax[0],minMax[1]),4,(255,0,0),-1)
-    #
-    # # cv2.line(im,pt1=(int(x),int(y)),pt2=(int(z),int(w)),color=(255,0,0),thickness=1,lineType=cv2.LINE_AA)
-    # cv2.imshow("mmm",im)
-    # #cv2.destroyAllWindows()
     listaPuntos = []
     for punto in listas:
         x, y = punto
@@ -407,11 +371,6 @@ def obtenerPuntosAreaExterna(im,list):
         print("square")
     else:
         print("other shape")
-    # print ("el punto en el eje X minimo es :",z," el punto encontrado es :",puntosEjeX[ptoMin[0][0]])
-    # gggg = ara[(ara <(x+2))&(ara >(x-2))]
-    # print (colored("el maximo es: ",'red'),(x,y))
-    # print (colored("el minimo es: ",'green'),(z,w))
-    # return listaPuntos
     return listas
 
 def maximizarPuntos(im,list):
