@@ -67,18 +67,18 @@ def train ():
         parcial_path = os.path.join(TRAIN_DIR, folder)
         for filename in os.listdir(parcial_path):
             if os.path.splitext(filename)[1].lower() in test_ext:
-                print("Test, processing ", filename, "\n")
                 full_path = os.path.join(parcial_path, filename)
+                print("Test, processing ", full_path, "\n")
                 regions = []
                 I = cv2.imread(full_path)
-                I = cv2.imread("./auxiliar_images/velocidad.jpg")
-                color = imitacionHOG(I)
-                colour = ""
-                if (color == 0):  # azul
-                    colour = "blue"
-                elif (color == 2):  # rojo
-                    colour = "red"
-                lineas(I)
+                # I = cv2.imread("./auxiliar_images/ceda.jpg")
+                # color = imitacionHOG(I)
+                # colour = ""
+                # if (color == 0):  # azul
+                #     colour = "blue"
+                # elif (color == 2):  # rojo
+                #     colour = "red"
+                # lineas(I)
                 trainShape = I.shape
                 # pruebaLineas(None,"otro")
                 imageShape = (trainShape[1],trainShape[0])
@@ -104,21 +104,14 @@ def train ():
                     B = x+w
                     C = y
                     D = y+h
-
-
-                    # print ("W/H ==> ",(w/h))
-                    # hay que hacer un filtro como el de aspect ratio pero con la aparencia de los puntos(x,y,w,h)
                     if (float(w) / float(h) > 1.2) or (float(w) / float(h) < 0.8):
                         continue
 
                     if (not Vect.contienePunto(rects, rect)):
-
-                        # print (w*h)
-                        # cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
-                        # cv2.imshow("area", Icopy)
-                        # cv2.waitKey()
-                        # cv2.destroyWindow("area")
-                        # Icopy = Icopy2.copy()
+                        cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
+                        cv2.imshow("area", Icopy)
+                        cv2.waitKey()
+                        cv2.destroyWindow("area")
 
 
                         xS, yS, wS, hS = x, y, w, h
@@ -127,16 +120,7 @@ def train ():
                         ## pasar HOG a la nuevaImagen y si pasa el filtro de los colores, buscar lineas/circulos
                         cv2.imshow("original", I)
                         cv2.imshow("nuevaImagen", nuevaImagen)
-                        # cv2.waitKey()
                         cv2.destroyAllWindows()
-                        # pruebaCirculo(nuevaImagen,filename)
-                        # xS,yS,wS,hS=rect
-                        color = imitacionHOG(nuevaImagen)
-                        colour = ""
-                        if (color == 0):  # azul
-                            colour = "blue"
-                        elif (color == 2):  # rojo
-                            colour = "red"
                         lineas(nuevaImagen)
                         rects.append(rect)
 
@@ -189,49 +173,6 @@ def lineas(imageName=None):
     # cv2.imshow("detected lines", cdst)
     cv2.waitKey()
 
-
-
-def pruebaLineas(im,imageName):
-    if(im is None):
-        bgr_img = cv2.imread("./rectanguloConFlecha.jpg")
-    else:
-        bgr_img = im.copy()
-    gray = cv2.cvtColor(bgr_img,cv2.COLOR_BGR2GRAY)
-    cv2.imshow("mm",gray)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
-
-    imagen, img = graph.limpiarImagen(bgr_img, "otro")
-    rgb_img = imagen.copy()
-    cimg = cv2.cvtColor(img,cv2.COLOR_GRAY2BGR)
-    lineas = cv2.HoughLinesP(img,1, 3.14/180, 80, 100, 10)
-    whOld=1000
-    lineaAnterior = [0,0,0,0]
-    if (lineas is not None):
-        for linea in lineas:
-            x1,y1,x2,y2 = linea[0]
-            pt1 = (x1,y1)
-            pt2 = (x2,y2)
-
-            if(1):
-                print ("linea: punto1 =  ",pt1," punto 2 =",pt2)
-
-                cv2.line(imagen,(x1,y1),(x2,y2),(0,0,255),2)
-                cv2.circle(imagen, (x1, y1), 3, (255, 0, 0), -1)
-                cv2.circle(imagen, (x2, y2), 3, (255, 0, 0), -1)
-                cv2.imshow("mm",imagen)
-                cv2.waitKey(5000)
-                cv2.destroyAllWindows()
-                whOld=x2/y2
-                imagen = rgb_img.copy()
-        # plt.figure(imageName)
-        # plt.subplot(121), plt.imshow(rgb_img)
-        # plt.title('Input Image'), plt.xticks([]), plt.yticks([])
-        # plt.subplot(122), plt.imshow(imagen)
-        # plt.title('Hough Transform'), plt.xticks([]), plt.yticks([])
-        # plt.show()
-    else:
-        print("HOLA")
 
 
 
