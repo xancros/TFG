@@ -71,7 +71,7 @@ def train ():
                 print("Test, processing ", full_path, "\n")
                 regions = []
                 I = cv2.imread(full_path)
-                # I = cv2.imread("./auxiliar_images/ceda.jpg")
+                I = cv2.imread("./auxiliar_images/ceda.jpg")
                 # color = imitacionHOG(I)
                 # colour = ""
                 # if (color == 0):  # azul
@@ -142,8 +142,17 @@ def lineas(imageName=None):
     # prueba(ah)
     # cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
     print(fn.shape)
-    lines = cv2.HoughLines(dst, 1, np.pi / 180, 75)
+    px, py, ch = fn.shape
+    m = [px, py]
+    threshold = int(np.amax(m) / 2)
+
+    # lines = cv2.HoughLines(dst, 1, np.pi / 180, 75)
+    lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
     # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
+    if (lines is None):
+        print("posible circulo")
+        return
+
     a, b, c = lines.shape
     # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
     linesConverted = []
