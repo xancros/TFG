@@ -49,6 +49,8 @@ def limpiarImagen(bgr_img, shapeName):
         img = cv2.bitwise_not(img)
         return (rgb_img.copy(), img)
 
+
+########BUENO
 def pruebaCirculo(im, imageName):
     if (im is None):
         bgr_img = cv2.imread('./test2.jpg')  # read as it is
@@ -57,37 +59,19 @@ def pruebaCirculo(im, imageName):
     else:
         bgr_img = im.copy()
 
-        # bgr_img = cv2.imread("C:/Users/xancr/Documents/Imgs/Final_Training/Images/00000/00000_00000.ppm")
-    # cv2.imshow("im",bgr_img)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    # if bgr_img.shape[-1] == 3:  # color image
-    #     b, g, r = cv2.split(bgr_img)  # get b,g,r
-    #     rgb_img = cv2.merge([r, g, b])  # switch it to rgb
-    #     gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-    # else:
-    #     gray_img = bgr_img
-    # imagen = rgb_img.copy()
-    # # img = cv2.medianBlur(gray_img, 5)
-    # img = cv2.GaussianBlur(gray_img,(9,9),2,sigmaY=2)
+
     imagen, img = limpiarImagen(bgr_img, "circulo")
     rgb_img = imagen.copy()
     cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
     circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 2, 100,
-                               param1=10, param2=10, minRadius=0, maxRadius=0)
+                               param1=10, param2=20, minRadius=0, maxRadius=0)
     if (circles is not None):
         circles = np.uint16(np.around(circles))
-
-        for i in circles[0, :]:
-            # draw the outer circle
-            cv2.circle(imagen, (i[0], i[1]), i[2], (0, 255, 0), 1)
-            # draw the center of the circle
-            cv2.circle(imagen, (i[0], i[1]), 1, (0, 0, 255), 2)
-
-        # cv2.imshow("im",imagen)
-        # cv2.waitKey()
-        # cv2.destroyAllWindows()
+        print(np.amax(circles))
+        circle = Vect.getMaxCircle(circles)
+        cv2.circle(imagen, (circle[0], circle[1]), 1, (0, 0, 255), -1)
+        cv2.circle(imagen, (circle[0], circle[1]), circle[2], (0, 255, 0), 3)
         plt.figure(imageName)
         plt.subplot(121), plt.imshow(rgb_img)
         plt.title('Input Image'), plt.xticks([]), plt.yticks([])
@@ -99,16 +83,19 @@ def pruebaCirculo(im, imageName):
         print(("NO hay circulos"))
 
 
-def detectarCirculo(imagen):
+def detectarCirculo(image):
     print("detectar circulo")
     # image = cv2.imread("image.jpg", cv2.IMREAD_GRAYSCALE)
-    imBN = cv2.imread("./test2.jpg", cv2.IMREAD_GRAYSCALE)
+    imBN = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2GRAY)
+    rows, cols, channels = image.shape
     (thresh, im_bw) = cv2.threshold(imBN, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     # cv2.imshow("bnn",im_bw)
     # cv2.imshow("bn",imBN)
     # cv2.waitKey()
     # cv2.destroyAllWindows()
-    circles = cv2.HoughCircles(im_bw, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=0, maxRadius=0)
+    # circles = cv2.HoughCircles(im_bw, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=0, maxRadius=0)
+    circles = cv2.HoughCircles(im_bw, cv2.HOUGH_GRADIENT, 1, rows / 4, param1=100, param2=25, minRadius=0, maxRadius=0)
+
     circles = np.uint16(np.around(circles))
     for i in circles[0, :]:
         # draw the outer circle
@@ -116,6 +103,7 @@ def detectarCirculo(imagen):
         # draw the center of the circle
         cv2.circle(imBN, (i[0], i[1]), 2, (0, 0, 255), 3)
     cv2.imshow('detected circles', imBN)
+    cv2.imshow("source image", image)
     cv2.waitKey()
     cv2.destroyAllWindows()
 
