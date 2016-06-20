@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from sklearn.lda import LDA
 
-pathTrain = "./Training_Images/OCRImages/Train/"
+pathTrain = "./Training_Images/OCRImages/Train/training_ocr/"
 caracterMatrix = []
 carIndex = []
 clf = LDA()
@@ -20,16 +20,17 @@ diccionario = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
 # '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','ESP'
 
 
-def entrenarOCR(self):
+def entrenarOCR():
     print("funcion de entrenamiento del ocr")
     for archivo in listdir(pathTrain):
         prime = archivo.split('_')[0]
         if (prime != 'A' or prime != 'E' or prime != 'I' or prime != 'U'):
-            img = cv2.imread("training_ocr/%s" % (archivo), 0)
+            full_path = pathTrain + archivo
+            img = cv2.imread(full_path, 0)
             ret, umbral = cv2.threshold(img, 120, 255, cv2.THRESH_BINARY)
             contours, hierarchy = cv2.findContours(umbral.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
             for cnt in contours:
-                self.carIndex.append(self.diccionario[archivo.split('_')[0]])
+                carIndex.append(diccionario[archivo.split('_')[0]])
                 x, y, w, h = cv2.boundingRect(cnt)
                 umbralcut = umbral[y:y + h, x:x + w]
                 caracter = cv2.resize(umbralcut, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
@@ -37,7 +38,7 @@ def entrenarOCR(self):
                 caracterMatrix.append(caracterLine)
 
 
-def analizarImagen(self, imagen):
+def analizarImagen(imagen):
     print("busca texto STOP en la imagen")
     carMatrix = np.vstack(caracterMatrix)
     matr = []
@@ -92,13 +93,13 @@ def analizarImagen(self, imagen):
         letra = imgTH[rect[1]:rect[1] + rect[3], rect[0]:rect[0] + rect[2]]
         caracter = cv2.resize(letra, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
         letralinea = np.asarray(caracter).ravel()
-        letralinea = self.clf.transform(letralinea)
+        letralinea = clf.transform(letralinea)
         letralinea = letralinea.astype(np.float32)
         # retval, results = Bayes.predict(np.float32(letralinea))
         retval, results, neighbors, dists = Knear.find_nearest(np.float32(letralinea), 10)
         # retval,probs = em.predict(np.float32(letralinea))
         # print retval
-        for key, value in self.diccionario.iteritems():
+        for key, value in diccionario.iteritems():
             if value == int(retval):
                 # print key
                 if value != 36:
@@ -141,3 +142,6 @@ def analizarImagen(self, imagen):
     cv2.imshow("imagen", imagen)
     cv2.waitKey()
     cv2.destroyAllWindows()
+
+
+entrenarOCR()
