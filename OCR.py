@@ -14,7 +14,7 @@ diccionario = {'0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
                'E': 14, 'F': 15, 'G': 16, 'H': 17, 'I': 18, 'J': 19, 'K': 20,
                'L': 21, 'M': 22, 'N': 23, 'O': 24, 'P': 25, 'Q': 26, 'R': 27,
                'S': 28, 'T': 29, 'U': 30, 'V': 31, 'W': 32, 'X': 33, 'Y': 34,
-               'Z': 35, 'ESP': 36}
+               'Z': 35}
 
 
 # '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','ESP'
@@ -26,17 +26,22 @@ def entrenarOCR():
 
         prime = archivo.split('_')[0]
         if (prime != 'A' or prime != 'E' or prime != 'I' or prime != 'U'):
+            if (prime == "ESP"):
+                continue
             full_path = pathTrain + archivo
             img = cv2.imread(full_path, 0)
+            image = cv2.imread(full_path)
             ret, umbral = cv2.threshold(img, 120, 255, cv2.THRESH_BINARY)
-            contours, hierarchy = cv2.findContours(umbral.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+            im2, contours, hierarchy = cv2.findContours(umbral.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
             for cnt in contours:
                 carIndex.append(diccionario[archivo.split('_')[0]])
                 x, y, w, h = cv2.boundingRect(cnt)
+                im = image.copy()
                 umbralcut = umbral[y:y + h, x:x + w]
                 caracter = cv2.resize(umbralcut, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
                 caracterLine = np.asarray(caracter).ravel()
                 caracterMatrix.append(caracterLine)
+    print("hemos acabado el entrenamiento")
 
 
 def analizarImagen(imagen):
@@ -58,7 +63,7 @@ def analizarImagen(imagen):
     img = imagen.copy()
     imgBN = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     imgTH = cv2.adaptiveThreshold(imgBN, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-    contours, hierarchy = cv2.findContours(imgTH.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+    im2, contours, hierarchy = cv2.findContours(imgTH.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     cntOrd = []
     parents = []
     for i in range(0, contours.__len__()):
@@ -146,3 +151,5 @@ def analizarImagen(imagen):
 
 
 entrenarOCR()
+image = cv2.imread("./auxiliar_images/stop.jpg")
+analizarImagen(image)
