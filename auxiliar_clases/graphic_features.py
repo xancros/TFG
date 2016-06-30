@@ -128,3 +128,161 @@ def find_squares(img):
                     if max_cos < 0.1:
                         squares.append(cnt)
     return squares
+
+
+def lineas(imageName=None):
+    if (isinstance(imageName, str)):
+        if (imageName is None):
+            fn = cv2.imread("./ceda.jpg")
+        else:
+            fn = cv2.imread(imageName)
+    else:
+        fn = imageName
+    # src = cv2.imread(fn)
+    src = fn.copy()
+    imShape = fn.shape
+    bn = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    dst = cv2.Canny(bn, 50, 200, apertureSize=3)
+    # ah=cv2.imread(imageName,0)
+    # prueba(ah)
+    # cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
+    print(fn.shape)
+    px, py, ch = fn.shape
+    m = [px, py]
+    threshold = int(np.amax(m) / 2)
+
+    # lines = cv2.HoughLines(dst, 1, np.pi / 180, 75)
+    lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
+    # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
+    if (lines is None):
+        print("posible circulo")
+        pruebaCirculo(src, None)
+        return
+
+    a, b, c = lines.shape
+    # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
+    linesConverted = []
+    for i in lines:
+        # rho = lines[i][0][0]
+        # theta = lines[i][0][1]
+        rho, theta = i[0]
+        a = Vect.coseno(theta)
+        b = Vect.seno(theta)
+        x0, y0 = a * rho, b * rho
+        pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+        pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+        # cv2.line(src, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
+        # cv2.imshow("line", src)
+        # cv2.waitKey(200)
+        # cv2.destroyAllWindows()
+        punto = np.array([pt1, pt2])
+        linesConverted.append(punto)
+        # cv2.imshow("mm",src)
+        # # cv2.waitKey(2000)
+        # cv2.destroyAllWindows()
+    # cv2.imshow("mm",src)
+    # cv2.waitKey()
+    # cv2.destroyAllWindows()
+
+    Vect.acumularPuntosInterseccion(np.asarray(linesConverted), src)
+    cv2.imshow("source", fn)
+    # cv2.imshow("detected lines", cdst)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
+
+
+def usoHOG(img=None):
+    if (img == None):
+        img = cv2.imread("./test2.jpg", 0)
+    img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    imres = cv2.resize(img, (64, 128))
+    # nbins = 9
+    # winSize = (32, 16)
+    # blockSize = (8, 8)
+    # blockStride = (8, 8)
+    # cellSize = (8, 8)
+    winSize = (128, 64)
+    blockSize = (16, 16)
+    blockStride = (8, 8)
+    cellSize = (8, 8)
+    nbins = 9
+    derivAperture = 0
+    winSigma = -1
+    histogramNormType = 0
+    L2HysThreshold = 0.2
+    gammaCorrection = 0
+    nlevels = 64
+    hog2 = cv2.HOGDescriptor(winSize, blockSize, blockStride, cellSize, nbins, derivAperture, winSigma,
+                             histogramNormType, L2HysThreshold, gammaCorrection, nlevels)
+    locat = []
+
+    salida = hog2.compute(img, (0, 0), (0, 0), locat)
+    ##llamada para obtener imagen
+
+    blocks = (winSize[1] / (blockStride[1]) + winSigma)
+    cellsBlock = (winSize[0] / (blockStride[0]) + winSigma)
+    length = blocks * cellsBlock * (nbins) * 4
+    print(hog2.getDescriptorSize())
+    print("prueba de HOG")
+    cv2.imshow("imagen", imres)
+    cv2.waitKey(1000)
+    cv2.destroyAllWindows()
+    hog = cv2.HOGDescriptor()
+    # hog.setSVMDetector(cv2.HOGDESCRIPTOR_DEFAULT_NLEVELS)
+    des = []
+    lst = []
+
+    hist = hog.compute(img2, (0, 0), (0, 0), lst)
+    ow, oh, ch = img.shape
+
+    print(hist.shape)
+    hist2 = hog.computeGradient(img)
+
+    # cv2.imshow("algo",hist)
+    # cv2.waitKey()
+    # cv2.destroyAllWindows()
+    #
+    # print (hist)
+
+
+def imitacionHOG(img):
+    b, g, r = cv2.split(img)
+    cv2.imshow("blue", b)
+    cv2.imshow("green", g)
+    cv2.imshow("red", r)
+    maxB, maxG, maxR = np.amax(b), np.amax(g), np.amax(r)
+    print(maxB, maxG, maxR)
+    cv2.destroyAllWindows()
+    listaPuntosMaximosR = np.where(r == maxR)[0]
+    listaPuntosMaximosB = np.where(b == maxB)[0]
+    listaPuntosMaximosG = np.where(g == maxG)[0]
+    list = np.asanyarray([maxB, maxG, maxR])
+    lengthR = len(listaPuntosMaximosR)
+    lengthB = len(listaPuntosMaximosB)
+    lengthG = len(listaPuntosMaximosG)
+    lengths = [lengthR, lengthB, lengthG]
+    maxLength = np.where(lengths == np.amax((lengths)))[0][0]
+    if (maxLength == 0):
+        print("red")
+    elif (maxLength == 1):
+        print("blue")
+    else:
+        print("green")
+    index = np.where(list >= 200)[0]
+    if (len(index) > 1):
+        print("varios canales juegan")
+        max = np.amax(list)
+        indexMax = np.where(list == max)[0]
+        if (len(indexMax) > 1):
+            return -1
+        return indexMax[0]
+    elif (index[0] == 0):
+        print("la imagen es muy azul")
+        return 0
+    elif (index[0] == 1):
+        print("la imagen es muy verde")
+        return -1
+    else:
+        print("la imagen es roja")
+        return 2
+    return img

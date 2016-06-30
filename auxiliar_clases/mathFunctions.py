@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import numpy as np
 
@@ -6,6 +8,19 @@ from auxiliar_clases import graphic_features as graph
 
 # Funciones auxiliares a mandar a un archivo
 # Estas funciones son solo de puntos y calculos matematicos
+
+def coseno(numero):
+    return math.cos(numero)
+
+
+def seno(numero):
+    return math.sin(numero)
+
+
+def tangente(numero):
+    return math.tan(numero)
+
+
 def perp( a ) :
     b = np.empty_like(a)
     b[0] = -a[1]
@@ -237,6 +252,9 @@ def acumularPuntosInterseccion(lines, im):
     # cv2.waitKey()
     # cv2.destroyAllWindows()
     im2 = im.copy()
+    cv2.imshow("image", im)
+    cv2.waitKey(200)
+    cv2.destroyAllWindows()
     imShape = im.shape
     linesShape = lines.shape
     ruptura = []
@@ -251,7 +269,7 @@ def acumularPuntosInterseccion(lines, im):
             x11, y11 = linea2[1]
             cv2.line(im2, (int(x00), int(y00)), (int(x01), int(y01)), (255, 0, 0), 1, cv2.LINE_AA)
             cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)), (255, 0, 0), 1, cv2.LINE_AA)
-
+            ##MIRAR si las lineas son paralelas
             point = seg_intersect(lines[i][0], lines[i][1], lines[j][0], lines[j][1])
             # if(point[0]>0):
             #     cv2.circle(im2, (int(point[0]), int(point[1])), 4, (0, 255, 0), -1)
