@@ -199,14 +199,6 @@ def obtenerPuntosAreaExterna(im, list):
     PuntosParecidos = LimpiarPuntosParecidos(listaPuntosFinal, 20, 20)
 
     pts = len(listaPuntosFinal)
-    if (pts < 3):
-        print("circle")
-    elif (pts == 3):
-        print("triangle")
-    elif (pts == 4):
-        print("square")
-    else:
-        print("other shape")
     return listaPuntosFinal
 
 
@@ -219,10 +211,10 @@ def maximizarPuntos(im, list):
     print(list)
     ima = im.copy()
     # sorted(list,key=itemgetter(0))
-    for pt in list:
-        cv2.circle(ima, (pt[0], pt[1]), 3, (255, 0, 0), -1)
-    cv2.imshow("aaa", ima)
-    # cv2.destroyAllWindows()
+    # for pt in list:
+    #     cv2.circle(ima, (pt[0], pt[1]), 3, (255, 0, 0), -1)
+    # cv2.imshow("aaa", ima)
+    # # cv2.destroyAllWindows()
 
     listaPuntos = obtenerPuntosAreaExterna(im, list)
     # list.sort(key=itemgetter(0,1), reverse=True)
@@ -267,9 +259,9 @@ def acumularPuntosInterseccion(lines, im):
             x01, y01 = linea1[1]
             x10, y10 = linea2[0]
             x11, y11 = linea2[1]
-            cv2.line(im2, (int(x00), int(y00)), (int(x01), int(y01)), (255, 0, 0), 1, cv2.LINE_AA)
-            cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)), (255, 0, 0), 1, cv2.LINE_AA)
-            ##MIRAR si las lineas son paralelas
+            # cv2.line(im2, (int(x00), int(y00)), (int(x01), int(y01)), (255, 0, 0), 1, cv2.LINE_AA)
+            # cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)), (255, 0, 0), 1, cv2.LINE_AA)
+            # ##MIRAR si las lineas son paralelas
             point = seg_intersect(lines[i][0], lines[i][1], lines[j][0], lines[j][1])
             # if(point[0]>0):
             #     cv2.circle(im2, (int(point[0]), int(point[1])), 4, (0, 255, 0), -1)
@@ -280,19 +272,20 @@ def acumularPuntosInterseccion(lines, im):
                     puntoEntero = np.rint(point)
                     puntoEntero = puntoEntero.astype(int, copy=True)
                     ruptura.append(puntoEntero)
-
-    cv2.imshow("mm", im2)
-
-    # cv2.destroyAllWindows()
-    im2 = im.copy()
-    if (True):
-        ruptura = maximizarPuntos(im, ruptura)
-        print(ruptura)
-        ruptura = ruptura[::-1]
-        print(ruptura)
-        for pt in ruptura:
-            x, y = pt
-            cv2.circle(im2, (int(x), int(y)), 4, (0, 255, 0), -1)
-            cv2.imshow("mm", im2)
-            # cv2.waitKey()
-            cv2.destroyAllWindows()
+    ruptura = maximizarPuntos(im, ruptura)
+    return ruptura
+    # cv2.imshow("mm", im2)
+    #
+    # # cv2.destroyAllWindows()
+    # im2 = im.copy()
+    # if (True):
+    #     ruptura = maximizarPuntos(im, ruptura)
+    #     print(ruptura)
+    #     ruptura = ruptura[::-1]
+    #     print(ruptura)
+    #     for pt in ruptura:
+    #         x, y = pt
+    #         cv2.circle(im2, (int(x), int(y)), 4, (0, 255, 0), -1)
+    #         cv2.imshow("mm", im2)
+    #         # cv2.waitKey()
+    #         cv2.destroyAllWindows()

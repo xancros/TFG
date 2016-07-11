@@ -1,8 +1,43 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 
 from auxiliar_clases import mathFunctions as Vect
+
+
+def redAreaDetection(image, show=False):
+    # image2 = cv2.imread("./auxiliar_images/cirRoj.jpg")
+    img = image.copy()
+
+    # cambiar espacio rgb -> HSV
+    imag2 = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    x, y, ch = img.shape
+    cv2.imshow("hsvor", imag2)
+    h, s, v = cv2.split(imag2)
+    # s=10*s
+    s = cv2.equalizeHist(s)
+    v = 10 * v
+    chs = [h, s, v]
+    imgRes = cv2.merge(chs)
+    hsv_1 = (110, 50, 50)
+    hsv_2 = (130, 255, 255)
+    # im = cv2.inRange(imag2,(0,50,50),(20,255,255))
+    im = cv2.inRange(imgRes, (0, 40, 40), (10, 255, 255))
+    im2 = cv2.inRange(imgRes, (160, 40, 40), (179, 255, 255))
+    imgF = im  # +im2
+
+    cv2.imshow("win3", imgF)
+    cv2.destroyAllWindows()
+    cv2.imshow("hsv", im2)
+    cv2.destroyAllWindows()
+
+    if (show):
+        cv2.imshow("image", image)
+        cv2.imshow("win1", im)
+        cv2.imshow("win2", im2)
+        cv2.imshow("win3", imgF)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
+    return imgF
 
 
 def drawPoints(image, listPoints):
@@ -23,89 +58,6 @@ def getAndDrawPoints(image, listIndex, list, ShowImage=True):
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-
-def limpiarImagen(bgr_img, shapeName):
-    if (shapeName == "circulo"):
-        if bgr_img.shape[-1] == 3:  # color image
-            b, g, r = cv2.split(bgr_img)  # get b,g,r
-            rgb_img = cv2.merge([r, g, b])  # switch it to rgb
-            gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-        else:
-            gray_img = bgr_img
-        # img = cv2.medianBlur(gray_img, 5)
-        img = cv2.GaussianBlur(gray_img, (9, 9), 2, sigmaY=2)
-        cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        return (rgb_img.copy(), img)
-    else:
-        if bgr_img.shape[-1] == 3:  # color image
-            b, g, r = cv2.split(bgr_img)  # get b,g,r
-            rgb_img = cv2.merge([r, g, b])  # switch it to rgb
-            gray_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-        else:
-            gray_img = bgr_img
-        # img = cv2.medianBlur(gray_img, 5)
-        img = cv2.GaussianBlur(gray_img, (9, 9), 2, sigmaY=2)
-        img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 75, 10)
-        img = cv2.bitwise_not(img)
-        return (rgb_img.copy(), img)
-
-
-########BUENO
-def pruebaCirculo(im, imageName):
-    if (im is None):
-        bgr_img = cv2.imread('./test2.jpg')  # read as it is
-    elif (isinstance(im, str)):
-        bgr_img = cv2.imread(im)
-    else:
-        bgr_img = im.copy()
-
-
-    imagen, img = limpiarImagen(bgr_img, "circulo")
-    rgb_img = imagen.copy()
-    cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-
-    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 2, 100,
-                               param1=10, param2=20, minRadius=0, maxRadius=0)
-    if (circles is not None):
-        circles = np.uint16(np.around(circles))
-        print(np.amax(circles))
-        circle = Vect.getMaxCircle(circles)
-        cv2.circle(imagen, (circle[0], circle[1]), 1, (0, 0, 255), -1)
-        cv2.circle(imagen, (circle[0], circle[1]), circle[2], (0, 255, 0), 3)
-        plt.figure(imageName)
-        plt.subplot(121), plt.imshow(rgb_img)
-        plt.title('Input Image'), plt.xticks([]), plt.yticks([])
-        plt.subplot(122), plt.imshow(imagen)
-        plt.title('Hough Transform'), plt.xticks([]), plt.yticks([])
-        plt.show()
-
-    else:
-        print(("NO hay circulos"))
-
-
-def detectarCirculo(image):
-    print("detectar circulo")
-    # image = cv2.imread("image.jpg", cv2.IMREAD_GRAYSCALE)
-    imBN = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2GRAY)
-    rows, cols, channels = image.shape
-    (thresh, im_bw) = cv2.threshold(imBN, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    # cv2.imshow("bnn",im_bw)
-    # cv2.imshow("bn",imBN)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    # circles = cv2.HoughCircles(im_bw, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=30, minRadius=0, maxRadius=0)
-    circles = cv2.HoughCircles(im_bw, cv2.HOUGH_GRADIENT, 1, rows / 4, param1=100, param2=25, minRadius=0, maxRadius=0)
-
-    circles = np.uint16(np.around(circles))
-    for i in circles[0, :]:
-        # draw the outer circle
-        cv2.circle(imBN, (i[0], i[1]), i[2], (0, 255, 0), 2)
-        # draw the center of the circle
-        cv2.circle(imBN, (i[0], i[1]), 2, (0, 0, 255), 3)
-    cv2.imshow('detected circles', imBN)
-    cv2.imshow("source image", image)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
 
 
 def find_squares(img):
@@ -130,14 +82,59 @@ def find_squares(img):
     return squares
 
 
-def lineas(imageName=None):
-    if (isinstance(imageName, str)):
-        if (imageName is None):
-            fn = cv2.imread("./ceda.jpg")
-        else:
-            fn = cv2.imread(imageName)
-    else:
-        fn = imageName
+def find_lines(image):
+    #blur mask of image
+
+    img = image.copy()
+    dst = cv2.Canny(img.copy(), 50, 200, apertureSize=3)
+    cv2.imshow("canny", dst)
+    cv2.waitKey(500)
+    cv2.destroyAllWindows()
+    px, py = img.shape
+    m = [px, py]
+    threshold = int(np.amin(m) / 2)
+    while (threshold > 0):
+        lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
+        if (lines is None):
+            threshold -= 1
+        elif (len(lines) > 2):
+            a, b, c = lines.shape
+            # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
+            linesConverted = []
+            for i in lines:
+                # rho = lines[i][0][0]
+                # theta = lines[i][0][1]
+                rho, theta = i[0]
+                a = Vect.coseno(theta)
+                b = Vect.seno(theta)
+                x0, y0 = a * rho, b * rho
+                pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+                pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+                # cv2.line(src, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
+                # cv2.imshow("line", src)
+                # cv2.waitKey(200)
+                # cv2.destroyAllWindows()
+                punto = np.array([pt1, pt2])
+                linesConverted.append(punto)
+                # cv2.imshow("mm",src)
+                # # cv2.waitKey(2000)
+                # cv2.destroyAllWindows()
+                puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), img)
+
+
+def findCircles(img, param2, minRad, maxRad):
+    try:
+        # circles = cv2.HoughCircles(img.copy(), cv2.HOUGH_GRADIENT, 2, 1, np.array([]), 100, param2, 1)
+        circles = cv2.HoughCircles(img.copy(), cv2.HOUGH_GRADIENT, 1, 1,
+                                   param1=100, param2=param2, minRadius=0, maxRadius=0)
+    except:
+        circles = "nada"
+
+    return circles
+
+
+def lineas(imageName):
+    fn = imageName
     # src = cv2.imread(fn)
     src = fn.copy()
     imShape = fn.shape
@@ -156,7 +153,7 @@ def lineas(imageName=None):
     # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
     if (lines is None):
         print("posible circulo")
-        pruebaCirculo(src, None)
+        #pruebaCirculo(src, None)
         return
 
     a, b, c = lines.shape
@@ -245,44 +242,70 @@ def usoHOG(img=None):
     # print (hist)
 
 
-def imitacionHOG(img):
-    b, g, r = cv2.split(img)
-    cv2.imshow("blue", b)
-    cv2.imshow("green", g)
-    cv2.imshow("red", r)
-    maxB, maxG, maxR = np.amax(b), np.amax(g), np.amax(r)
-    print(maxB, maxG, maxR)
-    cv2.destroyAllWindows()
-    listaPuntosMaximosR = np.where(r == maxR)[0]
-    listaPuntosMaximosB = np.where(b == maxB)[0]
-    listaPuntosMaximosG = np.where(g == maxG)[0]
-    list = np.asanyarray([maxB, maxG, maxR])
-    lengthR = len(listaPuntosMaximosR)
-    lengthB = len(listaPuntosMaximosB)
-    lengthG = len(listaPuntosMaximosG)
-    lengths = [lengthR, lengthB, lengthG]
-    maxLength = np.where(lengths == np.amax((lengths)))[0][0]
-    if (maxLength == 0):
-        print("red")
-    elif (maxLength == 1):
-        print("blue")
+def shapeDetection(img):
+    imageShape = img.shape
+    Icopy = cv2.resize(img.copy(), (imageShape[0] * 2, imageShape[1] * 2))
+
+    redMask = redAreaDetection(Icopy)
+    if (not (redMask is None)):
+        print("Hay zona roja")
+        print("Detectar circulos")
+        mask = redMask.copy()
+        shape = mask.shape
+        s = [shape[0], shape[1]]
+        rm = (np.amin(s) / 3)
+        rmax = (np.amax(s) / 2)
+        res = np.ones_like(Icopy.copy())
+        thr = int(shape[0] / 8)
+        blurMask = cv2.medianBlur(mask, 5)
+
+        # blurMask = cv2.GaussianBlur(mask,(5,5),0)
+
+        # dst = cv2.Canny(blurMask.copy(), 400, 500, apertureSize=3)
+        # # dst = cv2.Canny(dst, 50, 200, apertureSize=3)
+        # cv2.imshow("canny",dst)
+
+        # cv2.waitKey(500)
+        # cv2.destroyAllWindows()
+        # cv2.imshow("blur",blurMask)
+        # cv2.imshow("original",redMask)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
+        cimg = Icopy.copy()  # numpy function
+        # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
+        param2 = 100
+        while (param2 > 0):
+            circles = findCircles(blurMask, param2, rm, rmax)
+            if (isinstance(circles, str)):
+                param2 = param2 - 1
+            elif (not (circles is None)):
+                # print("hay circulos, paramatro2 valor = ",param2)
+                a, b, c = circles.shape
+                for i in range(b):
+                    ptX, ptY, r = circles[0][i]
+                    # print ((r,rm))
+                    if (r >= rm and r <= rmax):
+                        cv2.circle(cimg, (ptX, ptY), 2, (0, 255, 0), 3)
+                        cv2.circle(cimg, (ptX, ptY), r, (0, 0, 255), 2)
+                        x, y, ch = cimg.shape
+                        # cimg = cv2.resize(cimg,(x*2,y*2))
+                        cv2.imshow("original", img)
+                        cv2.imshow("mask", blurMask)
+                        cv2.imshow("detected circles", cimg)
+                        cv2.waitKey(500)
+                        cv2.destroyAllWindows()
+                        return "circle"
+
+            param2 -= 1
+        if (param2 == 0):
+            # no se han detectado circulos, pasamos a detectar lineas
+            print("no se han detectado circulos, pasamos a detectar lineas en busca de triangulos")
+            cv2.imshow("imagen", img)
+            cv2.imshow("blurMask", blurMask)
+            cv2.waitKey()
+            cv2.destroyAllWindows()
+            points = find_lines(redMask)
+            return ("triangle")
     else:
-        print("green")
-    index = np.where(list >= 200)[0]
-    if (len(index) > 1):
-        print("varios canales juegan")
-        max = np.amax(list)
-        indexMax = np.where(list == max)[0]
-        if (len(indexMax) > 1):
-            return -1
-        return indexMax[0]
-    elif (index[0] == 0):
-        print("la imagen es muy azul")
-        return 0
-    elif (index[0] == 1):
-        print("la imagen es muy verde")
-        return -1
-    else:
-        print("la imagen es roja")
-        return 2
-    return img
+        print("No se detecta zona roja")
+        return ("other")
