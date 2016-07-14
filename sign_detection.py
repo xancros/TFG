@@ -20,9 +20,11 @@ listAreas=[]
 
 def obtenerRegion(image_path):
     print("Test, processing ", image_path, "\n")
+    path = image_path.split("\\")
+    print(path[-1])
     I = cv2.imread(image_path)
     trainShape = I.shape
-    print(trainShape)
+
     imageShape = [trainShape[1], trainShape[0]]
     Icopy = I.copy()
     Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
@@ -64,11 +66,19 @@ def obtenerRegion(image_path):
                 cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
                 Icopy = cv2.resize(Icopy, (imageShape[0] * 2, imageShape[1] * 2))
 
-                cv2.imshow("area", Icopy)
-                cv2.imshow("imagenArea", nuevaImagen)
-                # cv2.waitKey()
-                cv2.destroyAllWindows()
-                res = graph.shapeDetection(nuevaImagen)
+                # cv2.imshow("area", Icopy)
+                # cv2.imshow("imagenArea", nuevaImagen)
+                # # cv2.waitKey()
+                # cv2.destroyAllWindows()
+
+
+
+                #
+                if (image_path.__contains__("\\06\\00000.ppm")):
+                    res = graph.shapeDetection(nuevaImagen, image_path)
+                else:
+                    continue
+                # res = graph.shapeDetection(nuevaImagen,image_path)
                 if (res == "circle"):
                     print("circle")
                 elif (res == "triangle"):
@@ -76,10 +86,11 @@ def obtenerRegion(image_path):
                 else:
                     print("other")
                 Icopy = I.copy()
-
+                break
 
             else:
-                print("imagen grande")
+                a = 0
+                # print("imagen grande")
             rects.append(rect)
 
 def train ():

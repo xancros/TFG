@@ -3,33 +3,66 @@ import numpy as np
 
 from auxiliar_clases import mathFunctions as Vect
 
+kernel = np.ones((5, 5), np.uint8)
+CH = -1
+CV = -1
+CS = -1
+nombre = ""
 
-def redAreaDetection(image, show=False):
+
+def redAreaDetection(image, name, show=False):
     # image2 = cv2.imread("./auxiliar_images/cirRoj.jpg")
     img = image.copy()
-
+    sp = img.shape
     # cambiar espacio rgb -> HSV
     imag2 = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     x, y, ch = img.shape
-    cv2.imshow("hsvor", imag2)
+    # cv2.imshow("hsvor", imag2)
     h, s, v = cv2.split(imag2)
-    # s=10*s
-    s = cv2.equalizeHist(s)
+    CH = np.zeros_like(h)
+    CH = h
+    CV = np.zeros_like(v)
+    CV = v
+    CS = np.zeros_like(s)
+    CS = s
+    # s+=10
     v = 10 * v
+    s = cv2.equalizeHist(s)
+    # v=cv2.equalizeHist(v)
     chs = [h, s, v]
     imgRes = cv2.merge(chs)
+    test = cv2.cvtColor(imgRes, cv2.COLOR_HSV2BGR)
+    cv2.imshow("PRUEBA", test)
+    cv2.imshow("ORIGINAL", img)
+    cv2.waitKey(1000)
+    cv2.destroyAllWindows()
     hsv_1 = (110, 50, 50)
     hsv_2 = (130, 255, 255)
     # im = cv2.inRange(imag2,(0,50,50),(20,255,255))
-    im = cv2.inRange(imgRes, (0, 40, 40), (10, 255, 255))
-    im2 = cv2.inRange(imgRes, (160, 40, 40), (179, 255, 255))
-    imgF = im  # +im2
-
-    cv2.imshow("win3", imgF)
-    cv2.destroyAllWindows()
-    cv2.imshow("hsv", im2)
-    cv2.destroyAllWindows()
-
+    im = cv2.inRange(imgRes, (0, 100, 30), (10, 255, 255))
+    im2 = cv2.inRange(imgRes, (160, 100, 30), (180, 255, 255))
+    imgF = im + im2
+    # print (h[sp[0]/2])
+    indices = np.where(imgF == 255)
+    indicesX = indices[0]
+    indicesY = indices[1]
+    # print("VALORES DE HUE (MATIZ)| VALORES DE SATURACION | VALORES DE ILUMINACION")
+    # res = cv2.bitwise_and(img,img, mask= imgF)
+    # zeros = np.zeros_like(res)
+    # for i in range (0,len(indicesX)):
+    #     x = indicesX[i]
+    #     y = indicesY[i]
+    #     elem = h[indicesX[i]][indicesY[i]]
+    #     ese = s[indicesX[i]][indicesY[i]]
+    #     uve = v[indicesX[i]][indicesY[i]]
+    #     if ((elem >-1 and elem <=10) or (elem >=160 and elem <180)):
+    #         zeros[x][y]=res[x][y]
+    #
+    #         print ("MATIZ: ",elem, "SATURACION: ",ese, "ILUMINACION: ",uve)
+    #
+    # cv2.imshow("mascara",zeros)
+    # cv2.waitKey(500)
+    # cv2.destroyAllWindows()
     if (show):
         cv2.imshow("image", image)
         cv2.imshow("win1", im)
@@ -122,11 +155,11 @@ def find_lines(image):
                 puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), img)
 
 
-def findCircles(img, param2, minRad, maxRad):
+def findCircles(img, param2, minRad=0, maxRad=0):
     try:
         # circles = cv2.HoughCircles(img.copy(), cv2.HOUGH_GRADIENT, 2, 1, np.array([]), 100, param2, 1)
         circles = cv2.HoughCircles(img.copy(), cv2.HOUGH_GRADIENT, 1, 1,
-                                   param1=100, param2=param2, minRadius=0, maxRadius=0)
+                                   param1=100, param2=param2, minRadius=minRad, maxRadius=maxRad)
     except:
         circles = "nada"
 
@@ -242,11 +275,15 @@ def usoHOG(img=None):
     # print (hist)
 
 
-def shapeDetection(img):
+def shapeDetection(img, ruta):
+    nombre = ((ruta.split("\\"))[-1])
+    if (ruta.__contains__("06\\00000.ppm")):
+        print()
     imageShape = img.shape
-    Icopy = cv2.resize(img.copy(), (imageShape[0] * 2, imageShape[1] * 2))
 
-    redMask = redAreaDetection(Icopy)
+    Icopy = cv2.resize(img.copy(), (imageShape[0] * 5, imageShape[1] * 5))
+    Icp = Icopy.copy()
+    redMask = redAreaDetection(Icopy, nombre)
     if (not (redMask is None)):
         print("Hay zona roja")
         print("Detectar circulos")
@@ -258,54 +295,80 @@ def shapeDetection(img):
         res = np.ones_like(Icopy.copy())
         thr = int(shape[0] / 8)
         blurMask = cv2.medianBlur(mask, 5)
-
-        # blurMask = cv2.GaussianBlur(mask,(5,5),0)
-
-        # dst = cv2.Canny(blurMask.copy(), 400, 500, apertureSize=3)
-        # # dst = cv2.Canny(dst, 50, 200, apertureSize=3)
-        # cv2.imshow("canny",dst)
-
-        # cv2.waitKey(500)
-        # cv2.destroyAllWindows()
-        # cv2.imshow("blur",blurMask)
-        # cv2.imshow("original",redMask)
-        # cv2.waitKey()
-        # cv2.destroyAllWindows()
+        blurMask = cv2.resize(blurMask, (imageShape[0] * 5, imageShape[1] * 5))
+        res = cv2.bitwise_and(Icp, Icp, mask=blurMask)
+        cv2.imshow("source", Icopy)
+        cv2.imshow("bitwise", res)
+        cv2.imshow("blur", blurMask)
+        cv2.waitKey(1000)
+        cv2.destroyAllWindows()
         cimg = Icopy.copy()  # numpy function
         # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
         param2 = 100
-        while (param2 > 0):
-            circles = findCircles(blurMask, param2, rm, rmax)
+        while (param2 > 12):
+            circles = findCircles(blurMask, param2)
             if (isinstance(circles, str)):
                 param2 = param2 - 1
             elif (not (circles is None)):
-                # print("hay circulos, paramatro2 valor = ",param2)
+
                 a, b, c = circles.shape
                 for i in range(b):
                     ptX, ptY, r = circles[0][i]
                     # print ((r,rm))
-                    if (r >= rm and r <= rmax):
+                    if (r >= rm - 1):
+                        print("hay circulos, paramatro2 valor = ", param2)
                         cv2.circle(cimg, (ptX, ptY), 2, (0, 255, 0), 3)
                         cv2.circle(cimg, (ptX, ptY), r, (0, 0, 255), 2)
+                        c1 = [int(ptX - r - 3), int(ptY - r - 3)]
+                        # c2=(int(ptX-r-3),int(ptY+r+3))
+                        # c3=(int(ptX+r+3),int(ptY-r-3))
+                        c4 = [int(ptX + r + 3), int(ptY + r + 3)]
+                        if (c1[0] < 0):
+                            c1[0] = 0
+                        if (c1[1] < 0):
+                            c1[1] = 0
+                        if (c4[0] > shape[0]):
+                            c4[0] = shape[0]
+                        if (c4[1] > shape[1]):
+                            c4[1] = shape[1]
+                        mm = blurMask[c1[0]:c1[0] + c4[0], c1[1]:c1[1] + c4[1]]
+                        cv2.rectangle(cimg, (c1[0], c1[1]), (c4[0], c4[1]), (255, 0, 0), 1)
+                        # COMPROBAR SI EL FRAGMENTO DE LA MASCARA TIENE MAS DE 500 puntos
                         x, y, ch = cimg.shape
                         # cimg = cv2.resize(cimg,(x*2,y*2))
+                        path = ruta.split("\\")
+                        print(path[-1])
+                        # cv2.imshow("mmmmm",mm)
                         cv2.imshow("original", img)
                         cv2.imshow("mask", blurMask)
                         cv2.imshow("detected circles", cimg)
-                        cv2.waitKey(500)
+                        cv2.waitKey(1000)
                         cv2.destroyAllWindows()
                         return "circle"
 
             param2 -= 1
-        if (param2 == 0):
+        if (param2 <= 12):
             # no se han detectado circulos, pasamos a detectar lineas
             print("no se han detectado circulos, pasamos a detectar lineas en busca de triangulos")
-            cv2.imshow("imagen", img)
-            cv2.imshow("blurMask", blurMask)
+            show = cv2.resize(img.copy(), (s[0] * 2, s[1] * 2))
+            path = ruta.split("\\")
+            print(path[-1])
+            r = show[:, :, 2]
+            cv2.imshow("discordante", show)
+            cv2.imshow("red", r)
+            cv2.imshow("area", blurMask)
             cv2.waitKey()
             cv2.destroyAllWindows()
-            points = find_lines(redMask)
-            return ("triangle")
+            return "algo"
+            try:
+                points = find_lines(redMask)
+                if (len(points) == 3):
+                    return ("triangle")
+                else:
+                    return ("fondo")
+            except:
+                return ("fondo")
+
     else:
         print("No se detecta zona roja")
         return ("other")
