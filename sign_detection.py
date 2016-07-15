@@ -73,8 +73,8 @@ def obtenerRegion(image_path):
 
 
 
-                #
-                if (image_path.__contains__("\\06\\00000.ppm")):
+
+                if (image_path.__contains__("\\08\\00007.ppm")):
                     res = graph.shapeDetection(nuevaImagen, image_path)
                 else:
                     continue

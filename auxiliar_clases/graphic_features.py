@@ -8,7 +8,7 @@ CH = -1
 CV = -1
 CS = -1
 nombre = ""
-
+minParam2 = 13
 
 def redAreaDetection(image, name, show=False):
     # image2 = cv2.imread("./auxiliar_images/cirRoj.jpg")
@@ -25,10 +25,10 @@ def redAreaDetection(image, name, show=False):
     CV = v
     CS = np.zeros_like(s)
     CS = s
-    # s+=10
-    v = 10 * v
-    s = cv2.equalizeHist(s)
-    # v=cv2.equalizeHist(v)
+    s += 50
+    # v = 10 * v
+    # s = cv2.equalizeHist(s)
+    v = cv2.equalizeHist(v)
     chs = [h, s, v]
     imgRes = cv2.merge(chs)
     test = cv2.cvtColor(imgRes, cv2.COLOR_HSV2BGR)
@@ -42,27 +42,27 @@ def redAreaDetection(image, name, show=False):
     im = cv2.inRange(imgRes, (0, 100, 30), (10, 255, 255))
     im2 = cv2.inRange(imgRes, (160, 100, 30), (180, 255, 255))
     imgF = im + im2
-    # print (h[sp[0]/2])
     indices = np.where(imgF == 255)
     indicesX = indices[0]
     indicesY = indices[1]
-    # print("VALORES DE HUE (MATIZ)| VALORES DE SATURACION | VALORES DE ILUMINACION")
-    # res = cv2.bitwise_and(img,img, mask= imgF)
-    # zeros = np.zeros_like(res)
-    # for i in range (0,len(indicesX)):
-    #     x = indicesX[i]
-    #     y = indicesY[i]
-    #     elem = h[indicesX[i]][indicesY[i]]
-    #     ese = s[indicesX[i]][indicesY[i]]
-    #     uve = v[indicesX[i]][indicesY[i]]
-    #     if ((elem >-1 and elem <=10) or (elem >=160 and elem <180)):
-    #         zeros[x][y]=res[x][y]
-    #
-    #         print ("MATIZ: ",elem, "SATURACION: ",ese, "ILUMINACION: ",uve)
-    #
-    # cv2.imshow("mascara",zeros)
-    # cv2.waitKey(500)
-    # cv2.destroyAllWindows()
+    print("VALORES DE HUE (MATIZ)| VALORES DE SATURACION | VALORES DE ILUMINACION")
+    res = cv2.bitwise_and(img, img, mask=imgF)
+    zeros = np.zeros_like(res)
+    for i in range(0, len(indicesX)):
+        x = indicesX[i]
+        y = indicesY[i]
+        elem = h[indicesX[i]][indicesY[i]]
+        ese = s[indicesX[i]][indicesY[i]]
+        uve = v[indicesX[i]][indicesY[i]]
+        if ((elem > -1 and elem <= 10) or (elem >= 160 and elem < 180)):
+            zeros[x][y] = res[x][y]
+
+            print("MATIZ: ", elem, "SATURACION: ", ese, "ILUMINACION: ", uve)
+
+    cv2.imshow("mascara", zeros)
+    cv2.imshow("hsv", test)
+    cv2.waitKey(500)
+    cv2.destroyAllWindows()
     if (show):
         cv2.imshow("image", image)
         cv2.imshow("win1", im)
@@ -277,16 +277,17 @@ def usoHOG(img=None):
 
 def shapeDetection(img, ruta):
     nombre = ((ruta.split("\\"))[-1])
-    if (ruta.__contains__("06\\00000.ppm")):
+    if (ruta.__contains__("\\06\\")):
         print()
     imageShape = img.shape
 
     Icopy = cv2.resize(img.copy(), (imageShape[0] * 5, imageShape[1] * 5))
     Icp = Icopy.copy()
-    redMask = redAreaDetection(Icopy, nombre)
+    Icblur = cv2.medianBlur(Icopy, 5)
+    Icblur = cv2.blur(Icblur, (5, 5))
+
+    redMask = redAreaDetection(Icblur, nombre)
     if (not (redMask is None)):
-        print("Hay zona roja")
-        print("Detectar circulos")
         mask = redMask.copy()
         shape = mask.shape
         s = [shape[0], shape[1]]
@@ -294,9 +295,11 @@ def shapeDetection(img, ruta):
         rmax = (np.amax(s) / 2)
         res = np.ones_like(Icopy.copy())
         thr = int(shape[0] / 8)
-        blurMask = cv2.medianBlur(mask, 5)
+        blurMask = cv2.medianBlur(mask, 7)
+        blurMask = cv2.blur(blurMask, (5, 5))
         blurMask = cv2.resize(blurMask, (imageShape[0] * 5, imageShape[1] * 5))
         res = cv2.bitwise_and(Icp, Icp, mask=blurMask)
+        cv2.imshow("original", img)
         cv2.imshow("source", Icopy)
         cv2.imshow("bitwise", res)
         cv2.imshow("blur", blurMask)
@@ -305,7 +308,7 @@ def shapeDetection(img, ruta):
         cimg = Icopy.copy()  # numpy function
         # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
         param2 = 100
-        while (param2 > 12):
+        while (param2 > minParam2):
             circles = findCircles(blurMask, param2)
             if (isinstance(circles, str)):
                 param2 = param2 - 1
@@ -338,16 +341,16 @@ def shapeDetection(img, ruta):
                         # cimg = cv2.resize(cimg,(x*2,y*2))
                         path = ruta.split("\\")
                         print(path[-1])
-                        # cv2.imshow("mmmmm",mm)
                         cv2.imshow("original", img)
                         cv2.imshow("mask", blurMask)
                         cv2.imshow("detected circles", cimg)
-                        cv2.waitKey(1000)
+                        cv2.waitKey(500)
                         cv2.destroyAllWindows()
+                        print("----> Circulo detectado en la imagen : ", path, " <------")
                         return "circle"
 
             param2 -= 1
-        if (param2 <= 12):
+        if (param2 <= minParam2):
             # no se han detectado circulos, pasamos a detectar lineas
             print("no se han detectado circulos, pasamos a detectar lineas en busca de triangulos")
             show = cv2.resize(img.copy(), (s[0] * 2, s[1] * 2))
@@ -357,17 +360,9 @@ def shapeDetection(img, ruta):
             cv2.imshow("discordante", show)
             cv2.imshow("red", r)
             cv2.imshow("area", blurMask)
-            cv2.waitKey()
+            cv2.waitKey(2000)
             cv2.destroyAllWindows()
             return "algo"
-            try:
-                points = find_lines(redMask)
-                if (len(points) == 3):
-                    return ("triangle")
-                else:
-                    return ("fondo")
-            except:
-                return ("fondo")
 
     else:
         print("No se detecta zona roja")
