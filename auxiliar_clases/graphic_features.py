@@ -42,27 +42,31 @@ def redAreaDetection(image, name, show=False):
     im = cv2.inRange(imgRes, (0, 100, 30), (10, 255, 255))
     im2 = cv2.inRange(imgRes, (160, 100, 30), (180, 255, 255))
     imgF = im + im2
-    indices = np.where(imgF == 255)
-    indicesX = indices[0]
-    indicesY = indices[1]
-    print("VALORES DE HUE (MATIZ)| VALORES DE SATURACION | VALORES DE ILUMINACION")
-    res = cv2.bitwise_and(img, img, mask=imgF)
-    zeros = np.zeros_like(res)
-    for i in range(0, len(indicesX)):
-        x = indicesX[i]
-        y = indicesY[i]
-        elem = h[indicesX[i]][indicesY[i]]
-        ese = s[indicesX[i]][indicesY[i]]
-        uve = v[indicesX[i]][indicesY[i]]
-        if ((elem > -1 and elem <= 10) or (elem >= 160 and elem < 180)):
-            zeros[x][y] = res[x][y]
 
-            print("MATIZ: ", elem, "SATURACION: ", ese, "ILUMINACION: ", uve)
+    # indices = np.where(imgF == 255)
+    # indicesX = indices[0]
+    # indicesY = indices[1]
+    # print("VALORES DE HUE (MATIZ)| VALORES DE SATURACION | VALORES DE ILUMINACION")
+    # res = cv2.bitwise_and(img, img, mask=imgF)
+    # zeros = np.zeros_like(res)
+    # for i in range(0, len(indicesX)):
+    #     x = indicesX[i]
+    #     y = indicesY[i]
+    #     elem = h[indicesX[i]][indicesY[i]]
+    #     ese = s[indicesX[i]][indicesY[i]]
+    #     uve = v[indicesX[i]][indicesY[i]]
+    #     #(elem > -1 and elem <= 10) or (elem >= 160 and elem < 180)
+    #     if (1):
+    #         zeros[x][y] = res[x][y]
+    #
+    #         print("MATIZ: ", elem, "SATURACION: ", ese, "ILUMINACION: ", uve)
+    #
+    # cv2.imshow("mascara", zeros)
+    # cv2.imshow("hsv", test)
+    # cv2.waitKey(500)
+    # cv2.destroyAllWindows()
 
-    cv2.imshow("mascara", zeros)
-    cv2.imshow("hsv", test)
-    cv2.waitKey(500)
-    cv2.destroyAllWindows()
+
     if (show):
         cv2.imshow("image", image)
         cv2.imshow("win1", im)
@@ -77,7 +81,10 @@ def drawPoints(image, listPoints):
     for point in listPoints:
         x, y = point
         pt = (x, y)
-        cv2.circle(image, pt, 3, (255, 0, 0), -1)
+        cv2.circle(image, pt, 3, (0, 255, 0), -1)
+        cv2.imshow("Point in list", image)
+        cv2.waitKey(1000)
+        cv2.destroyAllWindows()
     cv2.imshow("Points in list", image)
     cv2.waitKey()
     cv2.destroyAllWindows()
@@ -87,9 +94,10 @@ def getAndDrawPoints(image, listIndex, list, ShowImage=True):
     for index in listIndex:
         pt = (list[index][0], list[index][1])
         cv2.circle(image, pt, 3, (255, 0, 0), -1)
-    cv2.imshow("Points in list", image)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
+    if (ShowImage):
+        cv2.imshow("Points in list", image)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
 
 
 
@@ -115,45 +123,98 @@ def find_squares(img):
     return squares
 
 
-def find_lines(image):
+def find_lines(image, mask):
     #blur mask of image
 
     img = image.copy()
-    dst = cv2.Canny(img.copy(), 50, 200, apertureSize=3)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    dst = cv2.Canny(mask.copy(), 50, 150, apertureSize=3)
     cv2.imshow("canny", dst)
     cv2.waitKey(500)
     cv2.destroyAllWindows()
-    px, py = img.shape
+    px, py, chs = img.shape
     m = [px, py]
-    threshold = int(np.amin(m) / 2)
-    while (threshold > 0):
-        lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
-        if (lines is None):
-            threshold -= 1
-        elif (len(lines) > 2):
-            a, b, c = lines.shape
-            # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
-            linesConverted = []
-            for i in lines:
-                # rho = lines[i][0][0]
-                # theta = lines[i][0][1]
-                rho, theta = i[0]
-                a = Vect.coseno(theta)
-                b = Vect.seno(theta)
-                x0, y0 = a * rho, b * rho
-                pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
-                pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-                # cv2.line(src, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
-                # cv2.imshow("line", src)
-                # cv2.waitKey(200)
-                # cv2.destroyAllWindows()
-                punto = np.array([pt1, pt2])
-                linesConverted.append(punto)
-                # cv2.imshow("mm",src)
-                # # cv2.waitKey(2000)
-                # cv2.destroyAllWindows()
-                puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), img)
+    # threshold = int(np.amin(m) / 2)
 
+    threshold = int(np.amin(m) / 4)
+
+    lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
+    if ((not (lines is None)) and (len(lines) > 2)):
+        a, b, c = lines.shape
+        # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
+        linesConverted = []
+        for i in lines:
+            # rho = lines[i][0][0]
+            # theta = lines[i][0][1]
+            rho, theta = i[0]
+            a = Vect.coseno(theta)
+            b = Vect.seno(theta)
+            x0, y0 = a * rho, b * rho
+            pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+            pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+            cv2.line(img, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
+            cv2.imshow("line", img)
+            cv2.waitKey(500)
+            cv2.destroyAllWindows()
+            punto = np.array([pt1, pt2])
+            linesConverted.append(punto)
+        # cv2.imshow("mm",src)
+        # # cv2.waitKey(2000)
+        # cv2.destroyAllWindows()
+        puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), image.copy())
+        if (len(puntos) == 3):
+            return "triangle"
+        else:
+            return "other"
+
+    return None
+
+
+#
+# def find_lines(image):
+#     #blur mask of image
+#
+#     img = image.copy()
+#     dst = cv2.Canny(img.copy(), 50, 200, apertureSize=3)
+#     cv2.imshow("canny", dst)
+#     cv2.waitKey(500)
+#     cv2.destroyAllWindows()
+#     px, py = img.shape
+#     m = [px, py]
+#     threshold = int(np.amin(m) / 2)
+#     while (threshold > 0):
+#         lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
+#         if (lines is None):
+#             threshold -= 1
+#         elif (len(lines) > 2):
+#             a, b, c = lines.shape
+#             # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
+#             linesConverted = []
+#             for i in lines:
+#                 # rho = lines[i][0][0]
+#                 # theta = lines[i][0][1]
+#                 rho, theta = i[0]
+#                 a = Vect.coseno(theta)
+#                 b = Vect.seno(theta)
+#                 x0, y0 = a * rho, b * rho
+#                 pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+#                 pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+#                 cv2.line(img, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
+#                 cv2.imshow("line", img)
+#                 cv2.waitKey(1000)
+#                 cv2.destroyAllWindows()
+#                 punto = np.array([pt1, pt2])
+#                 linesConverted.append(punto)
+#             # cv2.imshow("mm",src)
+#             # # cv2.waitKey(2000)
+#             # cv2.destroyAllWindows()
+#             puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), img)
+#             if (len(puntos)==3):
+#                 return "triangle"
+#             else:
+#                 return "other"
+#
+#     return None
 
 def findCircles(img, param2, minRad=0, maxRad=0):
     try:
@@ -164,61 +225,6 @@ def findCircles(img, param2, minRad=0, maxRad=0):
         circles = "nada"
 
     return circles
-
-
-def lineas(imageName):
-    fn = imageName
-    # src = cv2.imread(fn)
-    src = fn.copy()
-    imShape = fn.shape
-    bn = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
-    dst = cv2.Canny(bn, 50, 200, apertureSize=3)
-    # ah=cv2.imread(imageName,0)
-    # prueba(ah)
-    # cdst = cv2.cvtColor(dst, cv2.COLOR_GRAY2BGR)
-    print(fn.shape)
-    px, py, ch = fn.shape
-    m = [px, py]
-    threshold = int(np.amax(m) / 2)
-
-    # lines = cv2.HoughLines(dst, 1, np.pi / 180, 75)
-    lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
-    # lines = cv2.HoughLines(dst, 1, np.pi / 180, 1.5, 0.0)
-    if (lines is None):
-        print("posible circulo")
-        #pruebaCirculo(src, None)
-        return
-
-    a, b, c = lines.shape
-    # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
-    linesConverted = []
-    for i in lines:
-        # rho = lines[i][0][0]
-        # theta = lines[i][0][1]
-        rho, theta = i[0]
-        a = Vect.coseno(theta)
-        b = Vect.seno(theta)
-        x0, y0 = a * rho, b * rho
-        pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
-        pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-        # cv2.line(src, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
-        # cv2.imshow("line", src)
-        # cv2.waitKey(200)
-        # cv2.destroyAllWindows()
-        punto = np.array([pt1, pt2])
-        linesConverted.append(punto)
-        # cv2.imshow("mm",src)
-        # # cv2.waitKey(2000)
-        # cv2.destroyAllWindows()
-    # cv2.imshow("mm",src)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-
-    Vect.acumularPuntosInterseccion(np.asarray(linesConverted), src)
-    cv2.imshow("source", fn)
-    # cv2.imshow("detected lines", cdst)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
 
 
 def usoHOG(img=None):
@@ -275,95 +281,89 @@ def usoHOG(img=None):
     # print (hist)
 
 
+def circles(img, blurMask, cimg, ruta):
+    shape = img.shape
+    s = [shape[0], shape[1]]
+    rm = (np.amin(s) / 3)
+    param2 = 100
+    while (param2 > minParam2):
+        circles = findCircles(blurMask, param2)
+        if (isinstance(circles, str)):
+            param2 = param2 - 1
+        elif (not (circles is None)):
+
+            a, b, c = circles.shape
+            for i in range(b):
+                ptX, ptY, r = circles[0][i]
+                # print ((r,rm))
+                if (r >= rm - 1):
+                    print("hay circulos, paramatro2 valor = ", param2)
+                    cv2.circle(cimg, (ptX, ptY), 2, (0, 255, 0), 3)
+                    cv2.circle(cimg, (ptX, ptY), r, (0, 0, 255), 2)
+                    c1 = [int(ptX - r - 3), int(ptY - r - 3)]
+                    # c2=(int(ptX-r-3),int(ptY+r+3))
+                    # c3=(int(ptX+r+3),int(ptY-r-3))
+                    c4 = [int(ptX + r + 3), int(ptY + r + 3)]
+                    if (c1[0] < 0):
+                        c1[0] = 0
+                    if (c1[1] < 0):
+                        c1[1] = 0
+                    if (c4[0] > shape[0]):
+                        c4[0] = shape[0]
+                    if (c4[1] > shape[1]):
+                        c4[1] = shape[1]
+                    mm = blurMask[c1[0]:c1[0] + c4[0], c1[1]:c1[1] + c4[1]]
+                    cv2.rectangle(cimg, (c1[0], c1[1]), (c4[0], c4[1]), (255, 0, 0), 1)
+                    # COMPROBAR SI EL FRAGMENTO DE LA MASCARA TIENE MAS DE 500 puntos
+                    x, y, ch = cimg.shape
+                    # cimg = cv2.resize(cimg,(x*2,y*2))
+                    path = ruta.split("\\")
+                    print(path[-1])
+                    cv2.imshow("original", img)
+                    cv2.imshow("mask", blurMask)
+                    cv2.imshow("detected circles", cimg)
+                    cv2.waitKey(500)
+                    cv2.destroyAllWindows()
+                    print("----> Circulo detectado en la imagen : ", path, " <------")
+                    return "circle"
+
+        param2 -= 1
+        if (param2 <= minParam2):
+            # no se han detectado circulos, pasamos a detectar lineas
+            print("couldn't find important shape")
+            show = cv2.resize(img.copy(), (s[0] * 2, s[1] * 2))
+            path = ruta.split("\\")
+            print(path[-1])
+            return "other"
+
 def shapeDetection(img, ruta):
     nombre = ((ruta.split("\\"))[-1])
     if (ruta.__contains__("\\06\\")):
         print()
-    imageShape = img.shape
 
+    imageShape = img.shape
     Icopy = cv2.resize(img.copy(), (imageShape[0] * 5, imageShape[1] * 5))
     Icp = Icopy.copy()
     Icblur = cv2.medianBlur(Icopy, 5)
-    Icblur = cv2.blur(Icblur, (5, 5))
-
+    #Icblur = cv2.blur(Icblur, (5, 5))
     redMask = redAreaDetection(Icblur, nombre)
-    if (not (redMask is None)):
-        mask = redMask.copy()
-        shape = mask.shape
-        s = [shape[0], shape[1]]
-        rm = (np.amin(s) / 3)
-        rmax = (np.amax(s) / 2)
-        res = np.ones_like(Icopy.copy())
-        thr = int(shape[0] / 8)
-        blurMask = cv2.medianBlur(mask, 7)
-        blurMask = cv2.blur(blurMask, (5, 5))
-        blurMask = cv2.resize(blurMask, (imageShape[0] * 5, imageShape[1] * 5))
-        res = cv2.bitwise_and(Icp, Icp, mask=blurMask)
-        cv2.imshow("original", img)
-        cv2.imshow("source", Icopy)
-        cv2.imshow("bitwise", res)
-        cv2.imshow("blur", blurMask)
-        cv2.waitKey(1000)
-        cv2.destroyAllWindows()
-        cimg = Icopy.copy()  # numpy function
-        # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
-        param2 = 100
-        while (param2 > minParam2):
-            circles = findCircles(blurMask, param2)
-            if (isinstance(circles, str)):
-                param2 = param2 - 1
-            elif (not (circles is None)):
-
-                a, b, c = circles.shape
-                for i in range(b):
-                    ptX, ptY, r = circles[0][i]
-                    # print ((r,rm))
-                    if (r >= rm - 1):
-                        print("hay circulos, paramatro2 valor = ", param2)
-                        cv2.circle(cimg, (ptX, ptY), 2, (0, 255, 0), 3)
-                        cv2.circle(cimg, (ptX, ptY), r, (0, 0, 255), 2)
-                        c1 = [int(ptX - r - 3), int(ptY - r - 3)]
-                        # c2=(int(ptX-r-3),int(ptY+r+3))
-                        # c3=(int(ptX+r+3),int(ptY-r-3))
-                        c4 = [int(ptX + r + 3), int(ptY + r + 3)]
-                        if (c1[0] < 0):
-                            c1[0] = 0
-                        if (c1[1] < 0):
-                            c1[1] = 0
-                        if (c4[0] > shape[0]):
-                            c4[0] = shape[0]
-                        if (c4[1] > shape[1]):
-                            c4[1] = shape[1]
-                        mm = blurMask[c1[0]:c1[0] + c4[0], c1[1]:c1[1] + c4[1]]
-                        cv2.rectangle(cimg, (c1[0], c1[1]), (c4[0], c4[1]), (255, 0, 0), 1)
-                        # COMPROBAR SI EL FRAGMENTO DE LA MASCARA TIENE MAS DE 500 puntos
-                        x, y, ch = cimg.shape
-                        # cimg = cv2.resize(cimg,(x*2,y*2))
-                        path = ruta.split("\\")
-                        print(path[-1])
-                        cv2.imshow("original", img)
-                        cv2.imshow("mask", blurMask)
-                        cv2.imshow("detected circles", cimg)
-                        cv2.waitKey(500)
-                        cv2.destroyAllWindows()
-                        print("----> Circulo detectado en la imagen : ", path, " <------")
-                        return "circle"
-
-            param2 -= 1
-        if (param2 <= minParam2):
-            # no se han detectado circulos, pasamos a detectar lineas
-            print("no se han detectado circulos, pasamos a detectar lineas en busca de triangulos")
-            show = cv2.resize(img.copy(), (s[0] * 2, s[1] * 2))
-            path = ruta.split("\\")
-            print(path[-1])
-            r = show[:, :, 2]
-            cv2.imshow("discordante", show)
-            cv2.imshow("red", r)
-            cv2.imshow("area", blurMask)
-            cv2.waitKey(2000)
-            cv2.destroyAllWindows()
-            return "algo"
-
-    else:
-        print("No se detecta zona roja")
-        return ("other")
+    mask = redMask.copy()
+    shape = mask.shape
+    s = [shape[0], shape[1]]
+    rm = (np.amin(s) / 3)
+    rmax = (np.amax(s) / 2)
+    res = np.ones_like(Icopy.copy())
+    thr = int(shape[0] / 8)
+    blurMask = cv2.medianBlur(mask, 7)
+    blurMask = cv2.blur(blurMask, (5, 5))
+    blurMask = cv2.resize(blurMask, (imageShape[0] * 5, imageShape[1] * 5))
+    res = cv2.bitwise_and(Icp, Icp, mask=blurMask)
+    cv2.imshow("original", img)
+    cv2.imshow("source", Icopy)
+    cv2.imshow("bitwise", res)
+    cv2.imshow("blur", blurMask)
+    cv2.waitKey(1000)
+    cv2.destroyAllWindows()
+    cimg = Icopy.copy()  # numpy function
+    # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
+    return find_lines(Icopy.copy(), blurMask)
