@@ -1,6 +1,7 @@
 import os
 
 import cv2
+import numpy as np
 
 from auxiliar_clases import graphic_features as graph
 from auxiliar_clases import mathFunctions as Vect
@@ -20,7 +21,7 @@ listAreas=[]
 def obtenerRegion(image_path):
     print("Test, processing ", image_path, "\n")
     path = image_path.split("\\")
-    print(path[-1])
+    print("//" + path[-2] + "//" + path[-1])
     I = cv2.imread(image_path)
     trainShape = I.shape
 
@@ -28,19 +29,10 @@ def obtenerRegion(image_path):
     Icopy = I.copy()
     Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
 
-    areas = []
+    areas = np.zeros(shape=(3))
 
     minArea = int((imageShape[0] * imageShape[1]) / 2)
-    # mser.setDelta(2)
-    #mser.setMinArea(50)
 
-    # mid = None
-    # midT = False
-    # difShape = np.abs((trainShape[0] - trainShape[1]))
-    # if (difShape < 2):
-    #     mid = (int(trainShape[0] / 2), int(trainShape[1] / 2))
-    #     mser.setMinArea(minArea)
-    #     midT = True
     regionsDetected = mser.detectRegions(Igray, None)
     # rects = [cv2.boundingRect(p.reshape(-1,1,2)) for p in regionsDetected]
     rects = []
@@ -49,14 +41,14 @@ def obtenerRegion(image_path):
     areaSuficiente = False
     xS, yS, wS, hS = 0, 0, 0, 0
     Icopy2 = Icopy.copy()
-    # print(len(regionsDetected))
-    if (image_path.__contains__("\\11\\")):
-        print()
-        cv2.imshow("original", I)
-        cv2.waitKey(800)
-        cv2.destroyAllWindows()
-    else:
-        return
+    print(len(regionsDetected))
+    # if (image_path.__contains__("\\11\\")):
+    #     print()
+    #     cv2.imshow("original", I)
+    #     cv2.waitKey(800)
+    #     cv2.destroyAllWindows()
+    # else:
+    #     return
     for p in regionsDetected:
 
         rect = cv2.boundingRect(p.reshape(-1, 1, 2))
@@ -71,24 +63,39 @@ def obtenerRegion(image_path):
             # if (midT):
             nuevaImagen = I[yS:yS + hS, xS:xS + wS]
             cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
-            Icopy = cv2.resize(Icopy, (imageShape[0] * 2, imageShape[1] * 2))
+            Icopy = cv2.resize(Icopy, (200, 200), None, 0, 0, cv2.INTER_LANCZOS4)
+            nuevaImagen = cv2.resize(nuevaImagen, (200, 200), None, 0, 0, cv2.INTER_LANCZOS4)
+            # cv2.imshow("nueva imagen",nuevaImagen)
+            # cv2.waitKey(1000)
+            # cv2.destroyAllWindows()
 
             res = graph.shapeDetection(nuevaImagen, image_path)
 
             if (res == "circle"):
                 print("circle")
+                areas[0] += 1
+                # break
             elif (res == "triangle"):
                 print("triangle")
+                areas[1] += 1
+                # break
             else:
                 print("other")
+                areas[2] += 0.5
             Icopy = I.copy()
-            break
 
             # else:
             #     a = 0
                 # print("imagen grande")
             rects.append(rect)
-
+    maxValue = np.amax(areas)
+    index = np.where(areas == maxValue)[0]
+    if (index == 0):
+        return "circle"
+    elif (index == 1):
+        return "triangle"
+    else:
+        return "background"
 def train ():
     indice = 0
     regions = []
@@ -105,10 +112,15 @@ def train ():
         for filename in os.listdir(parcial_path):
             if os.path.splitext(filename)[1].lower() in test_ext:
                 full_path = os.path.join(parcial_path, filename)
-                # if(full_path.endswith("00043.ppm")):
-                if (1):
-                    region = obtenerRegion(full_path)
-                    regions.append(region)
+                region = obtenerRegion(full_path)
+                regions.append(region)
+                path = full_path.split("\\")
+                if (region == "circle"):
+                    print("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A CIRCLE SIGNAL")
+                elif (region == "triangle"):
+                    print("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A DANGER (TRIANGLE) SIGNAL")
+                else:
+                    print("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A BACKGROUND IMAGE")
 
 
 # usoHOG()

@@ -3,9 +3,6 @@ import math
 import cv2
 import numpy as np
 
-from auxiliar_clases import graphic_features as graph
-
-
 # Funciones auxiliares a mandar a un archivo
 # Estas funciones son solo de puntos y calculos matematicos
 
@@ -22,6 +19,57 @@ def seno(numero):
 def tangente(numero):
     return math.tan(numero)
 
+
+def getRects(listOfPoints):
+    subList = listOfPoints.copy()
+    vects = []
+    for i in range(0, 3):
+        source = subList[i]
+        rects = []
+        for j in range(0, 3):
+            end = subList[j]
+            if (source == end):
+                continue
+
+            pt0 = end[0] - source[0]
+            pt1 = end[1] - source[1]
+            rect = [pt0, pt1]
+            rects.append(rect)
+        vects.append(rects)
+    return vects
+
+
+def checkAngle(listOfPoints):
+    print("Checking angle value from list")
+    vects = getRects(listOfPoints)
+
+    for par in vects:
+        vect1, vect2 = par
+        angle = getAngleVectors(vect1, vect2)
+        if (not (angle >= 50 and angle <= 70)):
+            return False
+    return True
+
+
+def getAngleVectors(V1, V2):
+    print("Getting angle of vectors...")
+    s1 = np.dot(V1[0], V2[0])
+    s2 = np.dot(V1[1], V2[1])
+    sum = s1 + s2
+    m1 = getModule(V1)
+    m2 = getModule(V2)
+    dot = np.dot(m1, m2)
+    cos = sum / dot
+    angle = np.arccos(cos)
+    angle2 = np.rad2deg(angle)
+    return angle2
+
+
+def getModule(Vector):
+    vector2 = np.power(Vector, 2)
+    sum = vector2[0] + vector2[1]
+    sqr = np.sqrt(sum)
+    return sqr
 
 def perp( a ) :
     b = np.empty_like(a)
@@ -69,20 +117,19 @@ def estaPuntoenLista(list, ndarray):
     return False
 
 
-def angle_cos(p0, p1, p2):
-    d1, d2 = (p0 - p1).astype('float'), (p2 - p1).astype('float')
-    return abs(np.dot(d1, d2) / np.sqrt(np.dot(d1, d1) * np.dot(d2, d2)))
-
 
 def LimpiarPuntosParecidos(lst, ranMin, ranMax, scale):
-    ranMin = ranMin + (10 * scale)
-    ranMax = ranMax + (10 * scale)
+    # ranMin = ranMin + (10 * scale)
+    # ranMax = ranMax + (10 * scale)
+    ranMin = ranMin + (5 * scale)
+    ranMax = ranMax + (5 * scale)
     puntoParecido = []
-    for punto in lst:
+    listCopy = lst.copy()
+    lenght = len(lst)
+    for index in range(0, lenght):
+        punto = listCopy[index]
         if (EsPuntoParecido(lst, punto, ranMin, ranMax)):
-            puntoParecido.append(punto)
             lst.remove(punto)
-
     return puntoParecido
 
 
@@ -90,12 +137,13 @@ def EsPuntoParecido(lst, pt, ranMin, ranMax):
     # print(colored(pt,'red'))
     puntoParecido = []
     for lastPoint in lst:
+        # print("punto a comparar con la lista: ", pt, " --- punto de la lista : ", lastPoint)
         # lastPoint = lst[index]
         if (lastPoint[0] == 0 and lastPoint[1] == 0):
-            return False
+            continue
         if (lastPoint[0] == pt[0] and lastPoint[1] == pt[1]):
-            return False
-        print("punto a comparar con la lista: ", pt, " --- punto de la lista : ", lastPoint)
+            continue
+        # print("punto a comparar con la lista: ", pt, " --- punto de la lista : ", lastPoint)
         YminRan = lastPoint[0] - ranMin
         XminRan = lastPoint[1] - ranMin
         YmaxRan = lastPoint[0] + ranMax
@@ -171,13 +219,15 @@ def getPointFromList(listIndex, listElements):
 
 def obtenerPuntosAreaExterna(im, list):
     pt = list[0]
+    # graph.drawPoints(im.copy(),list)
     # cv2.circle(im,(pt[0],pt[1]),2,(255,0,0),-1)
     test = im.copy()
     x, y, ch = im.shape
+    scale = x / 10
     W, H = (x / IMAGEMASKREL), (y / IMAGEMASKREL)
     maskShapeX = int(np.rint(W + 0.1))
     maskShapeY = int(np.rint(H + 0.1))
-    list.sort(key=lambda tup: tup[1])
+    #list.sort(key=lambda tup: tup[1])
     mini = list[0]
     maxi = list[-1]
     maxValueY = maxi[1]
@@ -189,6 +239,7 @@ def obtenerPuntosAreaExterna(im, list):
     ########################################
 
     mask = np.zeros((maskShapeX, maskShapeY), np.uint8)
+    # mask = np.zeros((x, y), np.uint8)
     for pt in list:
         votofinal = pt
         votoNet = (int(votofinal[0] // IMAGEMASKREL), int(votofinal[1] // IMAGEMASKREL))  # coordenada (x,y)
@@ -198,7 +249,7 @@ def obtenerPuntosAreaExterna(im, list):
     mask2 = cv2.resize(mask, (y, x), None, 0, 0, cv2.INTER_NEAREST)
     cv2.imshow("mascara", mask)
     cv2.imshow("mask2", mask2)
-    cv2.waitKey()
+    cv2.waitKey(500)
     cv2.destroyAllWindows()
     puntosMascara = np.where(mask2 == 255)
     LX, LY = puntosMascara[1], puntosMascara[0]
@@ -229,62 +280,17 @@ def obtenerPuntosAreaExterna(im, list):
     cv2.circle(test, ptMinMax, 5, (0, 0, 255), -1)
     cv2.imshow("img", test)
     cv2.imshow("mask2", mask2)
-    cv2.waitKey()
+    cv2.waitKey(1000)
     cv2.destroyAllWindows()
-
+    test = im.copy()
     listaPuntosFinal = limpiarPuntosDobles(shapeListPoints)
 
     # graph.drawPoints(im, listaPuntosFinal)
-    PuntosParecidos = LimpiarPuntosParecidos(listaPuntosFinal, 5, 5, 5)
-
+    PuntosParecidos = LimpiarPuntosParecidos(listaPuntosFinal, 5, 5, scale)
+    # graph.drawPoints(test,listaPuntosFinal)
     pts = len(listaPuntosFinal)
-    return listaPuntosFinal
     ########################################
-    a, b = zip(*list)
-    puntosEjeX, puntosEjeY = np.asarray(a), np.asarray(b)
-    listaIndicesYMin = np.where((puntosEjeY > minValueY - 10) & (puntosEjeY <= minValueY + 10))[0]
-    listaIndicesYMax = np.where((puntosEjeY > maxValueY - 10) & (puntosEjeY <= maxValueY + 10))[0]
-    yMax = np.amax(puntosEjeY)
-    indice = np.where(puntosEjeY == yMax)[0]
-    l = []
-    for i in indice:
-        l.append([puntosEjeX[i], puntosEjeY[i]])
-    graph.drawPoints(test,l)
-    listaValores = []
-    listaValoresMaximos = []
-    for index in listaIndicesYMax:
-        listaValoresMaximos.append(list[index])
-    maximo = map(max, zip(*listaValoresMaximos))
-    x1, x2 = maximo
-    maximo = [x1, x2]
-    #graph.getAndDrawPoints(im, listaIndicesYMax, list,False)
-    for index in listaIndicesYMin:
-        listaValores.append(list[index])
-    minimo = map(min, zip(*listaValores))
-    x1, x2 = minimo
-    minimo = [x1, x2]
-    # graph.getAndDrawPoints(im, listaIndicesYMin, list,False)
-    listas = [minimo, maximo]
-    #graph.drawPoints(test,listas.copy())
-    MaxYminX = map(min, zip(*listaValoresMaximos))
-    x1, x2 = MaxYminX
-    MaxYminX=[x1,x2]
-    listas.append(MaxYminX)
-    MinYMaxX = map(max, zip(*listaValores))
-    x1, x2 = MinYMaxX
-    MinYMaxX = [x1,x2]
-    listas.append(MinYMaxX)
-    listaPuntos = []
-    #graph.drawPoints(test,listas.copy())
-    for punto in listas:
-        x, y = punto
-        listaPuntos.append([x, y])
 
-    listaPuntosFinal = limpiarPuntosDobles(listaPuntos)
-    graph.drawPoints(im, listaPuntosFinal)
-    PuntosParecidos = LimpiarPuntosParecidos(listaPuntosFinal, 5, 5,5)
-
-    pts = len(listaPuntosFinal)
     return listaPuntosFinal
 
 
@@ -293,8 +299,8 @@ def maximizarPuntos(im, list):
     # >> > L = [[0, 1, 'f'], [4, 2, 't'], [9, 4, 'afsd']]
     # >> > sorted(L, key=itemgetter(2))
     # [[9, 4, 'afsd'], [0, 1, 'f'], [4, 2, 't']]
-    print("------------------------------------------------------")
-    print(list)
+    # print("------------------------------------------------------")
+    # print(list)
     ima = im.copy()
 
     listaPuntos = obtenerPuntosAreaExterna(im, list)
@@ -306,9 +312,9 @@ def acumularPuntosInterseccion(lines, im):
     # cv2.waitKey()
     # cv2.destroyAllWindows()
     im2 = im.copy()
-    cv2.imshow("image", im)
-    cv2.waitKey(200)
-    cv2.destroyAllWindows()
+    # cv2.imshow("image", im)
+    # cv2.waitKey(200)
+    # cv2.destroyAllWindows()
     imShape = im.shape
     linesShape = lines.shape
     ruptura = []
