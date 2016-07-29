@@ -40,7 +40,7 @@ def getRects(listOfPoints):
 
 
 def checkAngle(listOfPoints):
-    print("Checking angle value from list")
+    # print("Checking angle value from list")
     vects = getRects(listOfPoints)
 
     for par in vects:
@@ -52,7 +52,7 @@ def checkAngle(listOfPoints):
 
 
 def getAngleVectors(V1, V2):
-    print("Getting angle of vectors...")
+    # print("Getting angle of vectors...")
     s1 = np.dot(V1[0], V2[0])
     s2 = np.dot(V1[1], V2[1])
     sum = s1 + s2
@@ -87,7 +87,12 @@ def seg_intersect(a1,a2, b1,b2) :
     dap = perp(da)
     denom = np.dot(dap, db)
     num = np.dot(dap, dp)
-    output = (num / denom.astype(float)) * db + b1
+    op = 0
+    if (denom.astype(float) == 0):
+        op = 0
+    else:
+        op = (num / denom.astype(float))
+    output = op * db + b1
     return output
     # return int(math.ceil((num / denom.astype(float))*db + b1))
 
@@ -218,6 +223,8 @@ def getPointFromList(listIndex, listElements):
     return list
 
 def obtenerPuntosAreaExterna(im, list):
+    if (len(list) == 0):
+        return []
     pt = list[0]
     # graph.drawPoints(im.copy(),list)
     # cv2.circle(im,(pt[0],pt[1]),2,(255,0,0),-1)
@@ -247,10 +254,11 @@ def obtenerPuntosAreaExterna(im, list):
             if (votoNet[0] < maskShapeX and votoNet[1] < maskShapeY):
                 mask[votoNet[1]][votoNet[0]] = 255
     mask2 = cv2.resize(mask, (y, x), None, 0, 0, cv2.INTER_NEAREST)
-    cv2.imshow("mascara", mask)
-    cv2.imshow("mask2", mask2)
-    cv2.waitKey(500)
-    cv2.destroyAllWindows()
+    # cv2.imshow("mascara", mask)
+    # cv2.imshow("mask2", mask2)
+    # cv2.waitKey(500)
+    # cv2.destroyWindow("mascara")
+    # cv2.destroyWindow("mask2")
     puntosMascara = np.where(mask2 == 255)
     LX, LY = puntosMascara[1], puntosMascara[0]
     # mask2[LX[0],LY[-1]]=255
@@ -278,10 +286,11 @@ def obtenerPuntosAreaExterna(im, list):
     cv2.circle(test, ptMin, 5, (255, 0, 0), -1)
     cv2.circle(test, ptMaxMin, 5, (0, 255, 0), -1)
     cv2.circle(test, ptMinMax, 5, (0, 0, 255), -1)
-    cv2.imshow("img", test)
-    cv2.imshow("mask2", mask2)
-    cv2.waitKey(1000)
-    cv2.destroyAllWindows()
+    # cv2.imshow("img", test)
+    # cv2.imshow("mask2", mask2)
+    # cv2.waitKey(1000)
+    # cv2.destroyWindow("img")
+    # cv2.destroyWindow("mask2")
     test = im.copy()
     listaPuntosFinal = limpiarPuntosDobles(shapeListPoints)
 
@@ -308,13 +317,7 @@ def maximizarPuntos(im, list):
 
 
 def acumularPuntosInterseccion(lines, im):
-    # cv2.imshow("mm",im)
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
     im2 = im.copy()
-    # cv2.imshow("image", im)
-    # cv2.waitKey(200)
-    # cv2.destroyAllWindows()
     imShape = im.shape
     linesShape = lines.shape
     ruptura = []
@@ -331,10 +334,6 @@ def acumularPuntosInterseccion(lines, im):
             # cv2.line(im2, (int(x10), int(y10)), (int(x11), int(y11)), (255, 0, 0), 1, cv2.LINE_AA)
             # ##MIRAR si las lineas son paralelas
             point = seg_intersect(lines[i][0], lines[i][1], lines[j][0], lines[j][1])
-            # if(point[0]>0):
-            #     cv2.circle(im2, (int(point[0]), int(point[1])), 4, (0, 255, 0), -1)
-            #     cv2.imshow("mm", im2)
-            #     cv2.destroyAllWindows()
             if (point[0] >= 0 and point[1] >= 0 and point[1] < imShape[0] and point[0] < imShape[1]):
                 if (not estaPuntoenLista(ruptura, point)):
                     puntoEntero = np.rint(point)

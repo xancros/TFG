@@ -13,6 +13,33 @@ nombre = ""
 minParam2 = 30
 
 
+def preProcessImage(image):
+    channel = image.copy()
+    # channel = cv2.adaptiveThreshold(channel, 255, adaptive_method=cv2.ADAPTIVE_THRESH_MEAN_C, thresholdType=cv2.THRESH_BINARY, blockSize=55, param1=7)
+    # channel = cv2.adaptiveThreshold(channel,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,55,7)
+    channel = cv2.adaptiveThreshold(channel, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 55, 7)
+    # mop up the dirt
+    channel = cv2.dilate(channel, None, 1)
+    channel = cv2.erode(channel, None, 1)
+    return channel
+
+
+def getBinaryInvMask(RGBImage):
+    img = RGBImage.copy()
+    b, g, r = cv2.split(img)
+    r = preProcessImage(r)
+    g = preProcessImage(g)
+    b = preProcessImage(b)
+    rgb = [b, g, r]
+    processedImage = cv2.merge(rgb)
+    # cv2.imshow("pr",processedImage)
+    # cv2.waitKey(800)
+    # cv2.destroyAllWindows()
+    grayImage = cv2.cvtColor(processedImage, cv2.COLOR_BGR2GRAY)
+    ret, threshold = cv2.threshold(grayImage, 127, 255, cv2.THRESH_BINARY_INV)
+    return threshold
+
+
 def printHSV_Values(image):
     imgF = image.copy()
     h, s, v = cv2.split(imgF)
@@ -36,41 +63,43 @@ def printHSV_Values(image):
     cv2.imshow("mascara", zeros)
     cv2.imshow("hsv", imgF)
     cv2.waitKey()
-    cv2.destroyAllWindows()
+    cv2.destroyWindow("mascara")
+    cv2.destroyWindow("hsv")
 
 def redAreaDetection(image, name, show=False):
-    # image2 = cv2.imread("./auxiliar_images/cirRoj.jpg")
     img = image.copy()
-    sp = img.shape
+    test3 = getBinaryInvMask(img)
+    pp = cv2.bitwise_and(img, img, mask=test3)
     # cambiar espacio rgb -> HSV
-    imag2 = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    x, y, ch = img.shape
-    # cv2.imshow("hsvor", imag2)
+    imag2 = cv2.cvtColor(pp, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(imag2)
-    CH = np.zeros_like(h)
-    CH = h
-    CV = np.zeros_like(v)
-    CV = v
-    CS = np.zeros_like(s)
-    CS = s
     # s += 50
     s = cv2.equalizeHist(s)
     v = cv2.equalizeHist(v)
     chs = [h, s, v]
     imgRes = cv2.merge(chs)
+    # cv2.imshow("source",img)
+    # cv2.imshow("imag2",imag2)
+    # imgRes = imag2.copy()
     test = cv2.cvtColor(imgRes, cv2.COLOR_HSV2BGR)
-    # cv2.imshow("PRUEBA", test)
-    # cv2.imshow("ORIGINAL", img)
-    # cv2.waitKey(1000)
-    # cv2.destroyAllWindows()
-    hsv_1 = (110, 50, 50)
-    hsv_2 = (130, 255, 255)
-    # im = cv2.inRange(imag2,(0,50,50),(20,255,255))
     im = cv2.inRange(imgRes, (0, 100, 30), (10, 255, 255))
     im2 = cv2.inRange(imgRes, (160, 100, 30), (180, 255, 255))
     imgF = im + im2
 
+    # b,g,r = cv2.split(pp.copy())
+    # r=preProcessImage(r)
+    # g=preProcessImage(g)
+    # b=preProcessImage(b)
+    # rgb=[b,g,r]
+    # pp = cv2.merge(rgb)
+    # cv2.imshow("PRUEBA", test)
 
+    # cv2.imshow("PRUEBA2", test3)
+    # cv2.imshow("pr",pp)
+    # cv2.imshow("ORIGINAL", img)
+    # cv2.imshow("imgF",imgF)
+    # cv2.waitKey(800)
+    # cv2.destroyAllWindows()
 
     if (show):
         cv2.imshow("image", image)
@@ -78,7 +107,10 @@ def redAreaDetection(image, name, show=False):
         cv2.imshow("win2", im2)
         cv2.imshow("win3", imgF)
         cv2.waitKey()
-        cv2.destroyAllWindows()
+        cv2.destroyWindow("image")
+        cv2.destroyWindow("win1")
+        cv2.destroyWindow("win2")
+        cv2.destroyWindow("win3")
     return imgF
 
 
@@ -89,10 +121,10 @@ def drawPoints(image, listPoints):
         cv2.circle(image, pt, 5, (0, 255, 0), -1)
         cv2.imshow("Point in list", image)
         cv2.waitKey(1000)
-        cv2.destroyAllWindows()
+        cv2.destroyWindow("Point in list")
     cv2.imshow("Points in list", image)
     cv2.waitKey(1000)
-    cv2.destroyAllWindows()
+    cv2.destroyWindow("Point in list")
 
 
 def getAndDrawPoints(image, listIndex, list, ShowImage=True):
@@ -135,9 +167,9 @@ def find_lines(image, mask):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     dst = cv2.Canny(mask.copy(), 50, 200)
     #dst = cv2.Canny(mask.copy(),50,150,apertureSize=3)
-    cv2.imshow("canny", dst)
-    cv2.waitKey(500)
-    cv2.destroyAllWindows()
+    # cv2.imshow("canny", dst)
+    # cv2.waitKey(500)
+    # cv2.destroyWindow("canny")
     px, py, chs = img.shape
     m = [px, py]
     # threshold = int(np.amin(m) / 2)
@@ -160,17 +192,14 @@ def find_lines(image, mask):
             pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
             pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
             cv2.line(img, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
-            cv2.imshow("line", img)
-            cv2.waitKey(500)
-            cv2.destroyAllWindows()
+            # cv2.imshow("line", img)
+            # cv2.waitKey(500)
+            # cv2.destroyWindow("line")
             punto = np.array([pt1, pt2])
             linesConverted.append(punto)
-        # cv2.imshow("mm",src)
-        # # cv2.waitKey(2000)
-        # cv2.destroyAllWindows()
-        cv2.imshow("line", img)
-        cv2.waitKey(1000)
-        cv2.destroyAllWindows()
+        # cv2.imshow("line", img)
+        # cv2.waitKey(250)
+        # cv2.destroyWindow("line")
         puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), image.copy())
         if (len(puntos) == 3):
             ## COMPROBAR QUE LAS LINEAS DE LOS PUNTOS DEL TRIANGULO SEAN AGUDOS EN TORNO A LOS 60º
@@ -178,58 +207,12 @@ def find_lines(image, mask):
             ## HACER UN ACUMULADOR DE RESULTADOS ENTRE FONDO, TRIANGULOS, CIRCULOS PARA RESULTADO DE IMAGEN
             if (Vect.checkAngle(puntos)):
                 return "triangle"
+            # print("Is not a warning triangle shape")
             return "other"
         else:
             return "other"
 
     return None
-
-
-#
-# def find_lines(image):
-#     #blur mask of image
-#
-#     img = image.copy()
-#     dst = cv2.Canny(img.copy(), 50, 200, apertureSize=3)
-#     cv2.imshow("canny", dst)
-#     cv2.waitKey(500)
-#     cv2.destroyAllWindows()
-#     px, py = img.shape
-#     m = [px, py]
-#     threshold = int(np.amin(m) / 2)
-#     while (threshold > 0):
-#         lines = cv2.HoughLines(dst, 1, np.pi / 180, threshold)
-#         if (lines is None):
-#             threshold -= 1
-#         elif (len(lines) > 2):
-#             a, b, c = lines.shape
-#             # linesConverted = np.zeros(dtype=np.float32,shape=(len(lines),2))
-#             linesConverted = []
-#             for i in lines:
-#                 # rho = lines[i][0][0]
-#                 # theta = lines[i][0][1]
-#                 rho, theta = i[0]
-#                 a = Vect.coseno(theta)
-#                 b = Vect.seno(theta)
-#                 x0, y0 = a * rho, b * rho
-#                 pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
-#                 pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
-#                 cv2.line(img, pt1, pt2, (255, 0, 0), 1, cv2.LINE_AA)
-#                 cv2.imshow("line", img)
-#                 cv2.waitKey(1000)
-#                 cv2.destroyAllWindows()
-#                 punto = np.array([pt1, pt2])
-#                 linesConverted.append(punto)
-#             # cv2.imshow("mm",src)
-#             # # cv2.waitKey(2000)
-#             # cv2.destroyAllWindows()
-#             puntos = Vect.acumularPuntosInterseccion(np.asarray(linesConverted), img)
-#             if (len(puntos)==3):
-#                 return "triangle"
-#             else:
-#                 return "other"
-#
-#     return None
 
 def findCircles(img, param2, minRad=0, maxRad=0):
     try:
@@ -277,7 +260,7 @@ def usoHOG(img=None):
     print("prueba de HOG")
     cv2.imshow("imagen", imres)
     cv2.waitKey(1000)
-    cv2.destroyAllWindows()
+    cv2.destroyWindow("imagen")
     hog = cv2.HOGDescriptor()
     # hog.setSVMDetector(cv2.HOGDESCRIPTOR_DEFAULT_NLEVELS)
     des = []
@@ -351,7 +334,9 @@ def circles(img, blurMask, cimg, ruta):
                     cv2.imshow("mask", blurMask)
                     cv2.imshow("detected circles", ccimg)
                     cv2.waitKey(500)
-                    cv2.destroyAllWindows()
+                    cv2.destroyWindow("original")
+                    cv2.destroyWindow("mask")
+                    cv2.destroyWindow("detected circles")
                     # print("----> Circulo detectado en la imagen : ", path, " <------")
                     ##en un futuro hay que obtener todos los circulos detectados, ordernar y obtener el circulo
                     ## con mayor area, osea el mas grande :D
@@ -370,14 +355,11 @@ def circles(img, blurMask, cimg, ruta):
 
 def shapeDetection(img, ruta):
     nombre = ((ruta.split("\\"))[-1])
-    if (ruta.__contains__("\\06\\")):
-        print()
-
     imageShape = img.shape
     Icopy = img.copy()
     Icp = Icopy.copy()
-    Icblur = cv2.medianBlur(Icopy, 7)
-    #Icblur = cv2.blur(Icblur, (5, 5))
+    # Icblur = cv2.medianBlur(Icopy, 7)
+    Icblur = cv2.blur(Icp, (5, 5))
     redMask = redAreaDetection(Icblur, nombre)
     mask = redMask.copy()
     shape = mask.shape
@@ -386,21 +368,21 @@ def shapeDetection(img, ruta):
     rmax = (np.amax(s) / 2)
     res = np.ones_like(Icopy.copy())
     thr = int(shape[0] / 8)
-    blurMask = cv2.medianBlur(mask, 9)
-    blurMask = cv2.blur(blurMask, (5, 5))
+    # blurMask = cv2.medianBlur(mask, 9)
+    blurMask = cv2.blur(mask.copy(), (9, 9))
 
     ##
 
     kernel = np.ones((3, 3), np.uint8)
-    opening = cv2.morphologyEx(blurMask.copy(), cv2.MORPH_OPEN, kernel, iterations=2)
+    opening = cv2.morphologyEx(blurMask.copy(), cv2.MORPH_OPEN, kernel, iterations=3)
     kernel = np.ones((5, 5), np.uint8)
     erosion = cv2.erode(blurMask.copy(), kernel, iterations=2)
     opening = cv2.GaussianBlur(opening, (9, 9), 0)
     erosion = cv2.GaussianBlur(erosion, (9, 9), 0)
     # cv2.imshow("test",opening)
-    # cv2.imshow("test2",erosion)
-    # cv2.moveWindow("test2",0,0)
-    # cv2.waitKey(1000)
+    # cv2.imshow("blur", blurMask)
+    # # cv2.moveWindow("test2",0,0)
+    # cv2.waitKey(800)
     # cv2.destroyAllWindows()
     ##
     # blurMask = cv2.resize(blurMask, (imageShape[0] * 5, imageShape[1] * 5))
@@ -413,7 +395,7 @@ def shapeDetection(img, ruta):
     # cv2.destroyAllWindows()
     cimg = Icopy.copy()  # numpy function
     # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
-    NCircles = circles(img.copy(), opening, cimg, ruta)
+    NCircles = circles(img.copy(), opening.copy(), cimg, ruta)
     if NCircles is None:
         return find_lines(Icopy.copy(), erosion.copy())
     else:

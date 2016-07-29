@@ -2,6 +2,7 @@ import os
 
 import cv2
 import numpy as np
+from termcolor import colored
 
 from auxiliar_clases import graphic_features as graph
 from auxiliar_clases import mathFunctions as Vect
@@ -12,43 +13,35 @@ ImageDir = "Images_Sign_Detection_Benchmark"
 # ImageDir = "Images_Sign_Recognition_Benchmark"
 TRAIN_DIR = "./Training_Images/Training/" + ImageDir
 #test_dir = './Final_Test/Images'
-test_dir = './TEST_Calle'
 test_ext = ('.jpg', '.ppm')
-listDescriptor = []
-listAreas=[]
+
+
+def checkAcumulator(index):
+    if (len(index) > 1):
+        if (index.__contains__(3)):
+            index.remove(3)
+            return checkAcumulator(index)
+    return index[0]
 
 
 def obtenerRegion(image_path):
-    print("Test, processing ", image_path, "\n")
+
     path = image_path.split("\\")
-    print("//" + path[-2] + "//" + path[-1])
     I = cv2.imread(image_path)
     trainShape = I.shape
-
-    imageShape = [trainShape[1], trainShape[0]]
     Icopy = I.copy()
     Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
-
     areas = np.zeros(shape=(3))
-
-    minArea = int((imageShape[0] * imageShape[1]) / 2)
-
-    regionsDetected = mser.detectRegions(Igray, None)
-    # rects = [cv2.boundingRect(p.reshape(-1,1,2)) for p in regionsDetected]
+    regionsDetected = mserTrain.detectRegions(Igray, None)
     rects = []
-    puntos = []
-    aratio = 0
-    areaSuficiente = False
-    xS, yS, wS, hS = 0, 0, 0, 0
     Icopy2 = Icopy.copy()
-    print(len(regionsDetected))
-    # if (image_path.__contains__("\\11\\")):
-    #     print()
+    # if (image_path.__contains__("01\\00043.ppm")):
     #     cv2.imshow("original", I)
     #     cv2.waitKey(800)
     #     cv2.destroyAllWindows()
     # else:
     #     return
+
     for p in regionsDetected:
 
         rect = cv2.boundingRect(p.reshape(-1, 1, 2))
@@ -60,7 +53,6 @@ def obtenerRegion(image_path):
         if (not Vect.contienePunto(rects, rect)):
 
             xS, yS, wS, hS = x, y, w, h
-            # if (midT):
             nuevaImagen = I[yS:yS + hS, xS:xS + wS]
             cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), thickness=1)
             Icopy = cv2.resize(Icopy, (200, 200), None, 0, 0, cv2.INTER_LANCZOS4)
@@ -72,16 +64,16 @@ def obtenerRegion(image_path):
             res = graph.shapeDetection(nuevaImagen, image_path)
 
             if (res == "circle"):
-                print("circle")
-                areas[0] += 1
+                # print("circle")
+                areas[0] += 1.05
                 # break
             elif (res == "triangle"):
-                print("triangle")
-                areas[1] += 1
+                # print("triangle")
+                areas[1] += 1.05
                 # break
             else:
-                print("other")
-                areas[2] += 0.5
+                # print("other")
+                areas[2] += 0.1
             Icopy = I.copy()
 
             # else:
@@ -90,38 +82,53 @@ def obtenerRegion(image_path):
             rects.append(rect)
     maxValue = np.amax(areas)
     index = np.where(areas == maxValue)[0]
+    a = []
+    if (maxValue == 0.0):
+        return "background"
+    index = checkAcumulator(index)
     if (index == 0):
         return "circle"
     elif (index == 1):
         return "triangle"
     else:
         return "background"
+
+
 def train ():
-    indice = 0
+    NImages = 0
     regions = []
+    bgs = []
     for folder in os.listdir(TRAIN_DIR):
         parcial_path = os.path.join(TRAIN_DIR, folder)
         if (parcial_path.endswith(".ppm")):
-            print("imagenes Sueltas -> ", parcial_path)
-            #
-            # region = obtenerRegion(parcial_path)
-            # regions.append(region)
             continue
         elif (parcial_path.endswith(".txt")):
             continue
         for filename in os.listdir(parcial_path):
             if os.path.splitext(filename)[1].lower() in test_ext:
+                NImages += 1
                 full_path = os.path.join(parcial_path, filename)
+                print("Test, processing ", full_path, "\n")
+                image = cv2.imread(full_path)
+                image = cv2.resize(image, (200, 200), None, 0, 0, cv2.INTER_LANCZOS4)
                 region = obtenerRegion(full_path)
                 regions.append(region)
                 path = full_path.split("\\")
                 if (region == "circle"):
-                    print("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A CIRCLE SIGNAL")
+                    s = ("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A CIRCLE SIGNAL")
+                    print(colored(s, 'red'))
                 elif (region == "triangle"):
-                    print("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A DANGER (TRIANGLE) SIGNAL")
+                    s = ("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A DANGER (TRIANGLE) SIGNAL")
+                    print(colored(s, 'green'))
                 else:
-                    print("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A BACKGROUND IMAGE")
-
+                    s = ("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A BACKGROUND IMAGE")
+                    print(colored(s, 'blue'))
+                    bgs.append(image)
+                    cv2.imshow("IMAGE", image)
+                    cv2.waitKey(3000)
+                    cv2.destroyAllWindows()
+            if (full_path.__contains__("\\11\\")):
+                print()
 
 # usoHOG()
 
