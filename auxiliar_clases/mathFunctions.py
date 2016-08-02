@@ -254,11 +254,11 @@ def obtenerPuntosAreaExterna(im, list):
             if (votoNet[0] < maskShapeX and votoNet[1] < maskShapeY):
                 mask[votoNet[1]][votoNet[0]] = 255
     mask2 = cv2.resize(mask, (y, x), None, 0, 0, cv2.INTER_NEAREST)
-    # cv2.imshow("mascara", mask)
-    # cv2.imshow("mask2", mask2)
-    # cv2.waitKey(500)
-    # cv2.destroyWindow("mascara")
-    # cv2.destroyWindow("mask2")
+    cv2.imshow("mascara", mask)
+    cv2.imshow("mask2", mask2)
+    cv2.waitKey(500)
+    cv2.destroyWindow("mascara")
+    cv2.destroyWindow("mask2")
     puntosMascara = np.where(mask2 == 255)
     LX, LY = puntosMascara[1], puntosMascara[0]
     # mask2[LX[0],LY[-1]]=255
@@ -286,11 +286,11 @@ def obtenerPuntosAreaExterna(im, list):
     cv2.circle(test, ptMin, 5, (255, 0, 0), -1)
     cv2.circle(test, ptMaxMin, 5, (0, 255, 0), -1)
     cv2.circle(test, ptMinMax, 5, (0, 0, 255), -1)
-    # cv2.imshow("img", test)
-    # cv2.imshow("mask2", mask2)
-    # cv2.waitKey(1000)
-    # cv2.destroyWindow("img")
-    # cv2.destroyWindow("mask2")
+    cv2.imshow("img", test)
+    cv2.imshow("mask2", mask2)
+    cv2.waitKey(1000)
+    cv2.destroyWindow("img")
+    cv2.destroyWindow("mask2")
     test = im.copy()
     listaPuntosFinal = limpiarPuntosDobles(shapeListPoints)
 
