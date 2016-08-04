@@ -35,7 +35,7 @@ def obtenerRegion(image_path):
     regionsDetected = mserTrain.detectRegions(Igray, None)
     rects = []
     Icopy2 = Icopy.copy()
-    if (image_path.__contains__("\\11\\00001.ppm")):
+    if (image_path.__contains__("\\11\\")):
         cv2.imshow("original", I)
         cv2.waitKey(800)
         cv2.destroyAllWindows()

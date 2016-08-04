@@ -3,10 +3,12 @@ import math
 import cv2
 import numpy as np
 
+from auxiliar_clases import graphic_features as graph
+
 # Funciones auxiliares a mandar a un archivo
 # Estas funciones son solo de puntos y calculos matematicos
 
-IMAGEMASKREL = 20
+IMAGEMASKREL = 20  # 10
 
 def coseno(numero):
     return math.cos(numero)
@@ -28,7 +30,8 @@ def getRects(listOfPoints):
         rects = []
         for j in range(0, 3):
             end = subList[j]
-            if (source == end):
+            # if (source == end):
+            if (np.array_equal(source, end)):
                 continue
 
             pt0 = end[0] - source[0]
@@ -41,14 +44,22 @@ def getRects(listOfPoints):
 
 def checkAngle(listOfPoints):
     # print("Checking angle value from list")
-    vects = getRects(listOfPoints)
-
+    list = np.asarray(listOfPoints, np.int32)
+    vects = getRects(list)
+    angles = []
+    angleMin = np.float64(50)
+    angleMax = np.float64(70)
     for par in vects:
         vect1, vect2 = par
         angle = getAngleVectors(vect1, vect2)
-        if (not (angle >= 50 and angle <= 70)):
-            return False
-    return True
+        angles.append(angle)
+        # if (not (angle > 45 and angle <= 70)):
+        #     return False
+    nIndex = np.where(((angles > angleMin) & (angle <= angleMax)))[0]
+    if (len(nIndex) >= 2):
+        return True
+    else:
+        return False
 
 
 def getAngleVectors(V1, V2):
@@ -161,6 +172,11 @@ def EsPuntoParecido(lst, pt, ranMin, ranMax):
     return False
 
 
+def limpiarListaDobles(lista):
+    b_set = set(x for x in lista)
+    b = [x for x in b_set]
+    return b
+
 def limpiarPuntosDobles(lista):
     b_set = set(tuple(x) for x in lista)
     b = [list(x) for x in b_set]
@@ -261,6 +277,41 @@ def obtenerPuntosAreaExterna(im, list):
     cv2.destroyWindow("mask2")
     puntosMascara = np.where(mask2 == 255)
     LX, LY = puntosMascara[1], puntosMascara[0]
+    #########################
+    listOrdered = sorted(list, key=lambda point: point[1])
+    yMin = listOrdered[0][1]
+    yMax = listOrdered[-1][1]
+    ranYMin = int(yMin - 20)
+    ranYMinMax = int(yMin + 20)
+    if (ranYMin < 0): ranYMin = 0
+    ranYMax = int(yMax + 20)
+    if (ranYMax > y): ranYMax = y
+    ranYMaxMin = int(yMax - 20)
+    listaX, listaY = zip(*listOrdered.copy())
+    listaX = np.asarray(listaX, np.uint)
+    listaY = np.asarray(listaY, np.uint)
+    indexYMinRange = np.where(((listaY > ranYMin) & (listaY < ranYMinMax)))
+    listXMin = []
+    for index in indexYMinRange:
+        listXMin.append(listaX[index])
+    minYminX = (np.amin(listXMin), yMin)
+    minYmaxX = (np.amax(listXMin), yMin)
+    # np.where( ((listaY>ranYMin) & (listaY<ranYMinMax)) )
+    indexYMaxRange = np.where(((listaY > ranYMaxMin) & (listaY < ranYMax)))
+
+    listXMax = []
+    for index in indexYMaxRange:
+        listXMax.append(listaX[index])
+    maxYminX = (np.amin(listXMax), yMax)
+    maxYmaxX = (np.amax(listXMax), yMax)
+    ll = [minYminX, minYmaxX, maxYminX, maxYmaxX]
+    graph.drawPoints(test.copy(), ll)
+    ll = limpiarPuntosDobles(ll)
+    puntosParecidos = LimpiarPuntosParecidos(ll, 5, 5, scale)
+    return ll
+    print(indexYMinRange)
+
+    #############
     # mask2[LX[0],LY[-1]]=255
     maxY = np.amax(LY)
     minY = np.amin(LY)
@@ -319,8 +370,9 @@ def maximizarPuntos(im, list):
 def acumularPuntosInterseccion(lines, im):
     im2 = im.copy()
     imShape = im.shape
-    linesShape = lines.shape
+
     ruptura = []
+    scale = imShape[0]/10
     sizeLines = len(lines)
     for i in range(sizeLines):
         for j in range(i + 1, sizeLines):
@@ -339,5 +391,10 @@ def acumularPuntosInterseccion(lines, im):
                     puntoEntero = np.rint(point)
                     puntoEntero = puntoEntero.astype(int, copy=True)
                     ruptura.append(puntoEntero)
+                    puntos = ruptura.copy()
+                    ruptura = limpiarPuntosDobles(ruptura)
+                    # graph.drawPoints(im2.copy(), ruptura)
+                    PuntosParecidos = LimpiarPuntosParecidos(ruptura, 5, 5, 10)
+    # graph.drawPoints(im2.copy(), ruptura)
     ruptura = maximizarPuntos(im, ruptura)
     return ruptura
