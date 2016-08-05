@@ -272,21 +272,22 @@ def obtenerPuntosAreaExterna(im, list):
     mask2 = cv2.resize(mask, (y, x), None, 0, 0, cv2.INTER_NEAREST)
     cv2.imshow("mascara", mask)
     cv2.imshow("mask2", mask2)
-    cv2.waitKey(500)
+    cv2.waitKey(1500)
     cv2.destroyWindow("mascara")
     cv2.destroyWindow("mask2")
     puntosMascara = np.where(mask2 == 255)
     LX, LY = puntosMascara[1], puntosMascara[0]
     #########################
+    rangeValue = 30
     listOrdered = sorted(list, key=lambda point: point[1])
     yMin = listOrdered[0][1]
     yMax = listOrdered[-1][1]
-    ranYMin = int(yMin - 20)
-    ranYMinMax = int(yMin + 20)
+    ranYMin = int(yMin - rangeValue)
+    ranYMinMax = int(yMin + rangeValue)
     if (ranYMin < 0): ranYMin = 0
-    ranYMax = int(yMax + 20)
+    ranYMax = int(yMax + rangeValue)
     if (ranYMax > y): ranYMax = y
-    ranYMaxMin = int(yMax - 20)
+    ranYMaxMin = int(yMax - rangeValue)
     listaX, listaY = zip(*listOrdered.copy())
     listaX = np.asarray(listaX, np.uint)
     listaY = np.asarray(listaY, np.uint)
@@ -294,6 +295,10 @@ def obtenerPuntosAreaExterna(im, list):
     listXMin = []
     for index in indexYMinRange:
         listXMin.append(listaX[index])
+    if (len(listXMin) == 1):
+        elem = listXMin[0]
+        if (elem.size == 0):
+            return []
     minYminX = (np.amin(listXMin), yMin)
     minYmaxX = (np.amax(listXMin), yMin)
     # np.where( ((listaY>ranYMin) & (listaY<ranYMinMax)) )
@@ -302,16 +307,23 @@ def obtenerPuntosAreaExterna(im, list):
     listXMax = []
     for index in indexYMaxRange:
         listXMax.append(listaX[index])
+    if (len(listXMax) == 1):
+        elem = listXMax[0]
+        if (elem.size == 0):
+            return []
     maxYminX = (np.amin(listXMax), yMax)
     maxYmaxX = (np.amax(listXMax), yMax)
     ll = [minYminX, minYmaxX, maxYminX, maxYmaxX]
-    graph.drawPoints(test.copy(), ll)
+    graph.drawPoints(test.copy(), ll.copy())
     ll = limpiarPuntosDobles(ll)
     puntosParecidos = LimpiarPuntosParecidos(ll, 5, 5, scale)
     return ll
     print(indexYMinRange)
 
     #############
+    #
+    #   -----------------------------------------
+    #
     # mask2[LX[0],LY[-1]]=255
     maxY = np.amax(LY)
     minY = np.amin(LY)
@@ -339,7 +351,7 @@ def obtenerPuntosAreaExterna(im, list):
     cv2.circle(test, ptMinMax, 5, (0, 0, 255), -1)
     cv2.imshow("img", test)
     cv2.imshow("mask2", mask2)
-    cv2.waitKey(1000)
+    cv2.waitKey(1500)
     cv2.destroyWindow("img")
     cv2.destroyWindow("mask2")
     test = im.copy()
@@ -394,7 +406,7 @@ def acumularPuntosInterseccion(lines, im):
                     puntos = ruptura.copy()
                     ruptura = limpiarPuntosDobles(ruptura)
                     # graph.drawPoints(im2.copy(), ruptura)
-                    PuntosParecidos = LimpiarPuntosParecidos(ruptura, 5, 5, 10)
+                    # PuntosParecidos = LimpiarPuntosParecidos(ruptura, 5, 5, 10)
     # graph.drawPoints(im2.copy(), ruptura)
     ruptura = maximizarPuntos(im, ruptura)
     return ruptura
