@@ -3,8 +3,6 @@ import math
 import cv2
 import numpy as np
 
-from auxiliar_clases import graphic_features as graph
-
 # Funciones auxiliares a mandar a un archivo
 # Estas funciones son solo de puntos y calculos matematicos
 
@@ -270,11 +268,11 @@ def obtenerPuntosAreaExterna(im, list):
             if (votoNet[0] < maskShapeX and votoNet[1] < maskShapeY):
                 mask[votoNet[1]][votoNet[0]] = 255
     mask2 = cv2.resize(mask, (y, x), None, 0, 0, cv2.INTER_NEAREST)
-    cv2.imshow("mascara", mask)
-    cv2.imshow("mask2", mask2)
-    cv2.waitKey(1500)
-    cv2.destroyWindow("mascara")
-    cv2.destroyWindow("mask2")
+    # cv2.imshow("mascara", mask)
+    # cv2.imshow("mask2", mask2)
+    # cv2.waitKey(1500)
+    # cv2.destroyWindow("mascara")
+    # cv2.destroyWindow("mask2")
     puntosMascara = np.where(mask2 == 255)
     LX, LY = puntosMascara[1], puntosMascara[0]
     #########################
@@ -314,7 +312,7 @@ def obtenerPuntosAreaExterna(im, list):
     maxYminX = (np.amin(listXMax), yMax)
     maxYmaxX = (np.amax(listXMax), yMax)
     ll = [minYminX, minYmaxX, maxYminX, maxYmaxX]
-    graph.drawPoints(test.copy(), ll.copy())
+    # graph.drawPoints(test.copy(), ll.copy())
     ll = limpiarPuntosDobles(ll)
     puntosParecidos = LimpiarPuntosParecidos(ll, 5, 5, scale)
     return ll

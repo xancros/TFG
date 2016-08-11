@@ -92,15 +92,19 @@ def redAreaDetection(image, name, show=False):
     test = cv2.cvtColor(imgRes, cv2.COLOR_HSV2BGR)
     im = cv2.inRange(imgRes, (0, 100, 30), (15, 255, 255))
     im2 = cv2.inRange(imgRes, (160, 100, 30), (180, 255, 255))
-    imgF = im + im2
+    #### imgF = im + im2
+    imgF = cv2.bitwise_or(im, im2)
     imP = cv2.inRange(prueba, (0, 100, 30), (15, 255, 255))
     imP2 = cv2.inRange(prueba, (160, 100, 30), (180, 255, 255))
-    imgFP = imP + imP2
+    ##### imgFP = imP + imP2
+    imgFP = cv2.bitwise_or(imP, imP2)
     # cv2.imshow("PRUEBA", test)
     #
     # printHSV_Values(imgRes)
     # printHSV_Values(prueba)
-    final = imgF + imgFP
+
+    ##### final = imgF + imgFP
+    final = cv2.bitwise_or(imgF, imgFP)
     # cv2.imshow("PRUEBA2", test3)
     # cv2.imshow("pr",imP)
     # cv2.imshow("ORIGINAL", imP2)

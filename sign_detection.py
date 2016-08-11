@@ -35,10 +35,12 @@ def obtenerRegion(image_path):
     regionsDetected = mserTrain.detectRegions(Igray, None)
     rects = []
     Icopy2 = Icopy.copy()
-    if (image_path.__contains__("\\11\\")):
+    if (image_path.__contains__("\\14\\")):
         cv2.imshow("original", I)
         cv2.waitKey(800)
         cv2.destroyAllWindows()
+    elif (image_path.__contains__("\\15\\")):
+        raise Exception("FIn carpeta 14")
     else:
         return "circle"
 
@@ -108,12 +110,14 @@ def train ():
             if os.path.splitext(filename)[1].lower() in test_ext:
                 NImages += 1
                 full_path = os.path.join(parcial_path, filename)
+
                 print("Test, processing ", full_path, "\n")
                 image = cv2.imread(full_path)
                 image = cv2.resize(image, (200, 200), None, 0, 0, cv2.INTER_LANCZOS4)
                 region = obtenerRegion(full_path)
                 regions.append(region)
                 path = full_path.split("\\")
+                folderNumber = int(path[-2])
                 if (region == "circle"):
                     s = ("THE IMAGE -> " + path[-2] + "//" + path[-1] + "// -> IS A CIRCLE SIGNAL")
                     print(colored(s, 'red'))
@@ -127,9 +131,13 @@ def train ():
                     cv2.imshow("IMAGE", image)
                     cv2.waitKey(3000)
                     cv2.destroyAllWindows()
-            if (full_path.__contains__("\\11\\")):
+            if (folderNumber >= 14):
+                cv2.imshow("IMAGE", image)
+                cv2.waitKey(500)
+                cv2.destroyAllWindows()
+            if (full_path.__contains__("\\13\\")):
                 print()
-
+    print("END")
 # usoHOG()
 
 train()
