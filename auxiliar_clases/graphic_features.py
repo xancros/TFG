@@ -127,6 +127,49 @@ def redAreaDetection(image, name, show=False):
     return final
 
 
+def whiteAreaDetection(image, name, show=False):
+    img = image.copy()
+    test3 = getBinaryInvMask(img)
+    pp = cv2.bitwise_and(img, img, mask=test3)
+    # cambiar espacio rgb -> HSV
+    img = image.copy()
+    b, g, r = cv2.split(img)
+    r = preProcessImage(r)
+    g = preProcessImage(g)
+    b = preProcessImage(b)
+    rgb = [b, g, r]
+    prc = cv2.merge(rgb)
+    a = image.copy()
+    hsv = cv2.cvtColor(a, cv2.COLOR_BGR2HSV)
+    cv2.imshow("hsv", hsv)
+    cv2.waitKey(800)
+    cv2.destroyAllWindows()
+    h, s, v = cv2.split(hsv)
+    prueba = cv2.cvtColor(prc, cv2.COLOR_BGR2HSV)
+    imag2 = cv2.cvtColor(pp, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(imag2)
+    # s += 50
+    s = cv2.equalizeHist(s)
+    v = cv2.equalizeHist(v)
+    chs = [h, s, v]
+    imgRes = cv2.merge(chs)
+    imTest = cv2.inRange(hsv, (0, 0, 70), (0, 10, 255))
+
+    cv2.imshow("imgRes", imgRes)
+    cv2.imshow("pp", pp)
+    cv2.imshow("image", image)
+    cv2.imshow("win3", imTest)
+    cv2.waitKey(800)
+    cv2.destroyAllWindows()
+
+    if (show):
+        cv2.imshow("image", image)
+        cv2.imshow("win3", imTest)
+        cv2.waitKey()
+        cv2.destroyWindow("image")
+        cv2.destroyWindow("win3")
+    return imTest
+
 def drawPoints(image, listPoints):
     for point in listPoints:
         x, y = point

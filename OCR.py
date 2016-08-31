@@ -1,3 +1,4 @@
+from operator import itemgetter
 from os import listdir
 from os import path
 from os import remove
@@ -5,6 +6,9 @@ from os import remove
 import cv2
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+
+from auxiliar_clases import graphic_features as graph
 
 # from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
@@ -12,6 +16,7 @@ from sklearn.naive_bayes import GaussianNB
 
 
 pathTrain = "./Training_Images/OCRImages/Train/training_ocr/"
+# pathTrain = "./Training_Images/OCRImages/Train/imagenes/"
 caracterMatrix = []
 labelMatrix = []
 carIndex = []
@@ -32,7 +37,7 @@ pruebaC = None
 threads = []
 
 
-def entrenarOCR(overwriteFile=True, myPath="./training_file.npz"):
+def entrenarOCR(overwriteFile=False, myPath="./training_file.npz"):
     print("OCR function training")
     if (not myPath.endswith('.npz')):
         myPath += ".npz"
@@ -43,11 +48,12 @@ def entrenarOCR(overwriteFile=True, myPath="./training_file.npz"):
         if (path.exists(myPath)):
             remove(myPath)
         archivos = listdir(pathTrain)
-        caracterMatrix, labelMatrix = tratamiento(0, len(archivos), archivos)
+        # caracterMatrix, labelMatrix = tratamiento(0, len(archivos), archivos)
+        caracterMatrix, labelMatrix = tratamiento(0, len(archivos), archivos)  # tratamientoV2(archivos)
 
         save(caracterMatrix, labelMatrix, myPath)
     print("Training ended")
-
+    return caracterMatrix, labelMatrix
 
 def load(pathFile="./training_file.npz"):
     if (not pathFile.endswith('.npz')):
@@ -71,6 +77,7 @@ def esNumero(elem):
         return number
     except:
         return None
+
 
 def tratamiento(ini, fin, listFiles):
     for index in range(ini, fin):
@@ -96,10 +103,12 @@ def tratamiento(ini, fin, listFiles):
             umbralcut = umbral[y:y + h, x:x + w]
             caracter = cv2.resize(umbralcut, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
             caracterLine = np.asarray(caracter)  # .ravel()
+            caracterLine = np.asarray(caracterLine.ravel())
             # letralinea.reshape(-1,1)
             # caracterLine = caracterLine.reshape(-1,1)
             caracterMatrix.append(caracterLine)
             labelMatrix.append(prime)
+
             # cv2.imshow("caracter",im)
             # cv2.waitKey()
             # cv2.destroyAllWindows()
@@ -238,6 +247,104 @@ def analizarImagen(imag):
             cv2.destroyAllWindows()
 
 
-entrenarOCR(False)
-# image = cv2.imread("./auxiliar_images/stopsign.jpg")
-# analizarImagen(image)
+def searchStop(image, caracterList, labelList):
+    # imgR=cv2.resize(image.copy(),(200,200),interpolation=cv2.INTER_LANCZOS4)
+    buffer = ['S', 'T', 'O', 'P']
+    print("Searching STOP")
+    classifier = GaussianNB()
+    classifierKNN = KNeighborsClassifier(n_neighbors=1)
+    classifierKNN.fit(caracterList, labelList)
+    # classifier.fit(caracterList,labelList)
+    img2 = image.copy()
+    img = image.copy()
+    prueba = img.copy()
+    prueba = cv2.medianBlur(prueba, 9)
+    Sx, Sy, ch = image.shape
+    print("shape = ", Sx, Sy)
+    print("mid ", Sx // 2, Sy // 2)
+    midshape = (Sx // 2, Sy // 2)
+    secTercShape = (2 * Sx // 3 + 1, 2 * Sy // 3 + 1)
+    primTercShape = (Sx // 3, Sy // 3)
+    mask = graph.getBinaryInvMask(prueba)
+    # mask=cv2.bitwise_not(mask)
+    cv2.imshow("mask", mask)
+    cv2.waitKey(800)
+    cv2.destroyAllWindows()
+    gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+    # imgBlurred = cv2.GaussianBlur(gray, (5,5), 0)
+    imgBlurred = cv2.GaussianBlur(mask, (5, 5), 0)
+    ret, th = cv2.threshold(imgBlurred, 127, 255, cv2.THRESH_BINARY_INV)
+    # cv2.line(img,(0,primTercShape[1]),(x,primTercShape[1]),(0,255,0),thickness=1)
+    # cv2.line(img,(0,secTercShape[1]),(x,secTercShape[1]),(0,255,0),thickness=1)
+    cv2.imshow("mask", th)
+    # cv2.imshow("imagen",img)
+    cv2.waitKey(800)
+    cv2.destroyAllWindows()
+    imgContours, npaContours, hierarchy = cv2.findContours(th, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    lenContours = len(npaContours)
+    validContours = []
+    for i in range(0, lenContours):
+        cnt = npaContours[i]
+        ord = hierarchy[0][i][2]
+        x, y, w, h = cv2.boundingRect(cnt)
+        ima = img[y:y + h, x:x + w]
+        if ((w * h) > 700 and (w * h) <= 2500):
+            if (y > primTercShape[1]):
+                ptoX, ptoY = x + w, y + h
+                if (1):
+                    if (1):  # ord != -1):
+                        print(hierarchy[0][i])
+                        print(" --- punto X,Y ", (x, y), " --- Punto X+W , Y+H --- ", (x + w, y + h))
+                        cv2.imshow("ima", ima)
+                        cv2.waitKey(800)
+                        cv2.destroyWindow("ima")
+                        # if(y>=60 and (w*h)>2000):
+                        # print(w*h)
+                        # print(x,y,w,h)
+                        validContours.append([x, y, w, h])
+                        # else:continue
+
+    validContours2 = sorted(validContours, key=itemgetter(0))
+    cnt = 0
+    for x, y, w, h in validContours2:
+        if (len(buffer) <= 0):
+            break
+        cv2.rectangle(img2, (x, y), (x + w, y + h), (0, 255, 126), 3)
+        testImage = gray[y:y + h, x:x + w]
+        umbral = mask[y:y + h, x:x + w]
+        cv2.imshow("imagen", img2)
+        cv2.imshow("char", testImage)
+        cv2.imshow("umbral", umbral)
+        cv2.waitKey(800)
+        cv2.destroyAllWindows()
+        testImage = umbral
+        caracterTest = cv2.resize(testImage, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
+        caracterLine = np.asarray(caracterTest.ravel())
+        caracterLine = caracterLine.reshape(1, -1)
+        # res = classifier.predict(caracterLine)
+        res = classifierKNN.predict(caracterLine)
+        print("el resultado es", res)
+        try:
+            index = buffer.index(res)
+        except:
+            index = -1
+        if (index != -1):
+            cnt += 1
+            buffer.remove(res)
+        # cv2.imshow("char",testImage)
+        # cv2.waitKey(1000)
+        # cv2.destroyAllWindows()
+        print(x, y, w, h)
+    leng = len(buffer)
+    if (leng > 0):  # not all characters detected
+        if (cnt >= 3):  # almost all detected
+            return "stop"
+    else:
+        return "stop"
+
+
+caracterMatrix, labelMatrix = entrenarOCR()
+image = cv2.imread("./auxiliar_images/stopsign2.jpg")
+image2 = cv2.resize(image.copy(), (200, 200))
+resultado = searchStop(image2, caracterMatrix, labelMatrix)
+print(resultado)
