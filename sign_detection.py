@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from termcolor import colored
 
+import OCR
 from auxiliar_clases import graphic_features as graph
 from auxiliar_clases import mathFunctions as Vect
 
@@ -35,6 +36,7 @@ def obtenerRegion(image_path):
     regionsDetected = mserTrain.detectRegions(Igray, None)
     rects = []
     Icopy2 = Icopy.copy()
+
     if (image_path.__contains__("\\14\\")):
         cv2.imshow("original", I)
         cv2.waitKey(800)
@@ -67,6 +69,9 @@ def obtenerRegion(image_path):
 
             if (res == "circle"):
                 # print("circle")
+
+                # res = trainAndTest(image2,overwrite=False)
+
                 areas[0] += 1.05
                 # break
             elif (res == "triangle"):
@@ -89,6 +94,9 @@ def obtenerRegion(image_path):
         return "background"
     index = checkAcumulator(index)
     if (index == 0):
+        ocrResult = OCR.trainAndTest(nuevaImagen, overwrite=False)
+        if (ocrResult == "stop"):
+            return "background"
         return "circle"
     elif (index == 1):
         return "triangle"
