@@ -65,7 +65,7 @@ def obtenerRegion(image_path):
             # cv2.waitKey(1000)
             # cv2.destroyAllWindows()
 
-            res = graph.shapeDetection(nuevaImagen, image_path)
+            CircleShape, res = graph.shapeDetection(nuevaImagen, image_path)
 
             if (res == "circle"):
                 # print("circle")
@@ -94,7 +94,7 @@ def obtenerRegion(image_path):
         return "background"
     index = checkAcumulator(index)
     if (index == 0):
-        ocrResult = OCR.trainAndTest(nuevaImagen, overwrite=False)
+        ocrResult = OCR.trainAndTest(nuevaImagen, CircleShape, overwrite=False)
         if (ocrResult == "stop"):
             return "background"
         return "circle"

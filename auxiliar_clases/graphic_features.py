@@ -24,14 +24,33 @@ def preProcessImage(image):
     return channel
 
 
-def getBinaryInvMask(RGBImage):
+def preProcessImage2(image, stop):
+    channel = image.copy()
+    # channel = cv2.adaptiveThreshold(channel, 255, adaptive_method=cv2.ADAPTIVE_THRESH_MEAN_C, thresholdType=cv2.THRESH_BINARY, blockSize=55, param1=7)
+    # channel = cv2.adaptiveThreshold(channel,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,55,7)
+    channel = cv2.adaptiveThreshold(channel, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 61, 3)
+    # mop up the dirt
+    channel = cv2.dilate(channel, None, 1)
+    channel = cv2.erode(channel, None, 1)
+    return channel
+
+
+def getBinaryInvMask(RGBImage, stop=False):
     img = RGBImage.copy()
-    b, g, r = cv2.split(img)
-    r = preProcessImage(r)
-    g = preProcessImage(g)
-    b = preProcessImage(b)
-    rgb = [b, g, r]
-    processedImage = cv2.merge(rgb)
+    if (stop):
+        b, g, r = cv2.split(img)
+        r = preProcessImage2(r, stop)
+        g = preProcessImage2(g, stop)
+        b = preProcessImage2(b, stop)
+        rgb = [b, g, r]
+        processedImage = cv2.merge(rgb)
+    else:
+        b, g, r = cv2.split(img)
+        r = preProcessImage(r)
+        g = preProcessImage(g)
+        b = preProcessImage(b)
+        rgb = [b, g, r]
+        processedImage = cv2.merge(rgb)
     # cv2.imshow("pr",processedImage)
     # cv2.waitKey(800)
     # cv2.destroyAllWindows()
@@ -378,8 +397,8 @@ def circles(img, blurMask, cimg, ruta):
                     ## con mayor area, osea el mas grande :D
                     listCircles.append((ptX, ptY, r))
                     find = True
-                    if (r > 60):
-                        return "circle"
+                    # if (r > 60):
+                    #     return "circle"
 
         # if (param2 <= minParam2):
         #     # no se han detectado circulos, pasamos a detectar lineas
@@ -399,15 +418,18 @@ def circles(img, blurMask, cimg, ruta):
         # cv2.circle(ccimg, (ptX, ptY), r, (255, 0, 0), 5)
         c1 = [int(ptX - r - 3), int(ptY - r - 3)]
         c4 = [int(ptX + r + 3), int(ptY + r + 3)]
+        bigger = [c1[0], c1[1], c4[0], c4[1]]
         # cv2.rectangle(ccimg, (c1[0], c1[1]), (c4[0], c4[1]), (255, 0, 0), 3)
+        # cv2.line(ccimg,(0,c1[1]),(c4[0],c1[1]),(255,0,0),2)
+        # cv2.line(ccimg,(0,c4[1]),(c4[0],c4[1]),(0,125,255),2)
         if (r >= 60):
-            # cv2.imshow("detected circles", ccimg)
-            # cv2.waitKey(200)
-            # cv2.destroyWindow("detected circles")
+            #     cv2.imshow("detected circles", ccimg)
+            #     cv2.waitKey(200)
+            #     cv2.destroyWindow("detected circles")
             #
 
-            return "circle"
-    return None
+            return bigger, "circle"
+    return None, None
 
 def shapeDetection(img, ruta):
     nombre = ((ruta.split("\\"))[-1])
@@ -451,8 +473,8 @@ def shapeDetection(img, ruta):
     # cv2.destroyAllWindows()
     cimg = Icopy.copy()  # numpy function
     # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
-    NCircles = circles(img.copy(), opening.copy(), cimg, ruta)
+    circleShape, NCircles = circles(img.copy(), opening.copy(), cimg, ruta)
     if NCircles is None:
-        return find_lines(Icopy.copy(), erosion.copy())
+        return None, find_lines(Icopy.copy(), erosion.copy())
     else:
-        return NCircles
+        return circleShape, NCircles
