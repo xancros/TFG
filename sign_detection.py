@@ -36,15 +36,16 @@ def obtenerRegion(image_path):
     regionsDetected = mserTrain.detectRegions(Igray, None)
     rects = []
     Icopy2 = Icopy.copy()
-
-    if (image_path.__contains__("\\14\\")):
-        cv2.imshow("original", I)
-        cv2.waitKey(800)
-        cv2.destroyAllWindows()
-    elif (image_path.__contains__("\\15\\")):
-        raise Exception("FIn carpeta 14")
-    else:
-        return "circle"
+    listShapes = []
+    listImages = []
+    # if (image_path.__contains__("\\14\\00004.ppm")):
+    #     cv2.imshow("original", I)
+    #     cv2.waitKey(800)
+    #     cv2.destroyAllWindows()
+    # elif (image_path.__contains__("\\15\\")):
+    #     raise Exception("FIn carpeta 14")
+    # else:
+    #     return "circle"
 
     for p in regionsDetected:
 
@@ -69,13 +70,15 @@ def obtenerRegion(image_path):
 
             if (res == "circle"):
                 # print("circle")
-
+                listShapes.append(CircleShape)
                 # res = trainAndTest(image2,overwrite=False)
-
+                listImages.append(nuevaImagen)
                 areas[0] += 1.05
                 # break
             elif (res == "triangle"):
                 # print("triangle")
+                listShapes.append(CircleShape)
+                listImages.append(nuevaImagen)
                 areas[1] += 1.05
                 # break
             else:
@@ -88,20 +91,42 @@ def obtenerRegion(image_path):
                 # print("imagen grande")
             rects.append(rect)
     maxValue = np.amax(areas)
+
     index = np.where(areas == maxValue)[0]
     a = []
     if (maxValue == 0.0):
         return "background"
     index = checkAcumulator(index)
-    if (index == 0):
-        ocrResult = OCR.trainAndTest(nuevaImagen, CircleShape, overwrite=False)
+    if (index == 2):
+        return "background"
+    else:
+        sortedList = sorted(listShapes, key=lambda elem: elem[1])
+        bigger = sortedList[-1]
+        targetShape = bigger[0]
+        indexImage = listShapes.index(bigger)
+        targetImage = listImages[indexImage]
+        ocrResult = OCR.trainAndTest(targetImage, targetShape, overwrite=False)
         if (ocrResult == "stop"):
             return "background"
-        return "circle"
-    elif (index == 1):
-        return "triangle"
-    else:
-        return "background"
+        if (index == 0):
+            return "circle"
+        else:
+            return "triangle"
+            # if (index == 0):
+            #     # bigger = [[c1[0], c1[1], c4[0], c4[1]],r]
+            #     # circ = sorted(circ, key=lambda c: c[2])
+            #     # bigger = circ[-1]
+            #     sortedList = sorted(listShapes,key=lambda elem:elem[1])
+            #     bigger = sortedList[-1]
+            #     targetShape=bigger[0]
+            #     ocrResult = OCR.trainAndTest(nuevaImagen, targetShape, overwrite=False)
+            #     if (ocrResult == "stop"):
+            #         return "background"
+            #     return "circle"
+            # elif (index == 1):
+            #     return "triangle"
+            # else:
+            #     return "background"
 
 
 def train ():

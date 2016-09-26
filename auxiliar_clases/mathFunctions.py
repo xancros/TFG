@@ -316,52 +316,6 @@ def obtenerPuntosAreaExterna(im, list):
     ll = limpiarPuntosDobles(ll)
     puntosParecidos = LimpiarPuntosParecidos(ll, 5, 5, scale)
     return ll
-    print(indexYMinRange)
-
-    #############
-    #
-    #   -----------------------------------------
-    #
-    # mask2[LX[0],LY[-1]]=255
-    maxY = np.amax(LY)
-    minY = np.amin(LY)
-    YMinListIndex = np.where(LY == minY)[0]
-    YMaxListIndex = np.where(LY == maxY)[0]
-    listX = getPointFromList(YMinListIndex, LX)
-    minX = np.amin(listX)
-    maxX = np.amax(listX)
-    ptMin = (minX, minY)
-    ptMinMax = (maxX, minY)
-    listX = getPointFromList(YMaxListIndex, LX)
-    maxX = np.amax(listX)
-    minX = np.amin(listX)
-    ptMax = (maxX, maxY)
-    ptMaxMin = (minX, maxY)
-    # minX = LX[0]
-    # maxX = LX[-1]
-
-    # ptMaxMin = (maxX,minY)#MAL
-    # ptMinMax = (minX,maxY)#MAL
-    shapeListPoints = [ptMax, ptMin, ptMinMax, ptMaxMin]
-    cv2.circle(test, ptMax, 5, (255, 0, 0), -1)
-    cv2.circle(test, ptMin, 5, (255, 0, 0), -1)
-    cv2.circle(test, ptMaxMin, 5, (0, 255, 0), -1)
-    cv2.circle(test, ptMinMax, 5, (0, 0, 255), -1)
-    cv2.imshow("img", test)
-    cv2.imshow("mask2", mask2)
-    cv2.waitKey(1500)
-    cv2.destroyWindow("img")
-    cv2.destroyWindow("mask2")
-    test = im.copy()
-    listaPuntosFinal = limpiarPuntosDobles(shapeListPoints)
-
-    # graph.drawPoints(im, listaPuntosFinal)
-    PuntosParecidos = LimpiarPuntosParecidos(listaPuntosFinal, 5, 5, scale)
-    # graph.drawPoints(test,listaPuntosFinal)
-    pts = len(listaPuntosFinal)
-    ########################################
-
-    return listaPuntosFinal
 
 
 def maximizarPuntos(im, list):

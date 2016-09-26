@@ -302,8 +302,15 @@ def searchStop(image, limitShape, caracterList, labelList):
     lenContours = len(npaContours)
     validContours = []
     imaa = img.copy()
-
-    L1, L2, L3, L4 = limitShape
+    if (len(limitShape) == 3):
+        L2, L3, L4 = limitShape
+        listY = [L2[0], L3[0], L4[0]]
+        listX = [L2[1], L3[1], L4[1]]
+        L2 = np.amin(listY)
+        L4 = np.amax(listY)
+        L3 = np.amax(listX)
+    else:
+        L1, L2, L3, L4 = limitShape
     cv2.line(img2, (0, L2), (L3, L2), (255, 0, 0), 2)
     cv2.line(img2, (0, L4), (L3, L4), (0, 125, 255), 2)
     cv2.imshow("rect", img2)
@@ -314,6 +321,9 @@ def searchStop(image, limitShape, caracterList, labelList):
         ord = hierarchy[0][i][2]
         x, y, w, h = cv2.boundingRect(cnt)
         ima = img[y:y + h, x:x + w]
+        cv2.imshow("ima", ima)
+        cv2.waitKey(800)
+        cv2.destroyWindow("ima")
         if ((w * h) > 1000 and (w * h) <= 3000):
             if (y >= L2 and y < L4):  # y > primTercShape[1]):
                 ptoX, ptoY = x + w, y + h
@@ -321,9 +331,9 @@ def searchStop(image, limitShape, caracterList, labelList):
                     if (1):  # ord != -1):
                         # print(hierarchy[0][i])
                         # print(" --- punto X,Y ", (x, y), " --- Punto X+W , Y+H --- ", (x + w, y + h))
-                        cv2.imshow("ima", ima)
-                        cv2.waitKey(800)
-                        cv2.destroyWindow("ima")
+                        # cv2.imshow("ima", ima)
+                        # cv2.waitKey(800)
+                        # cv2.destroyWindow("ima")
                         # if(y>=60 and (w*h)>2000):
                         # print(w*h)
                         # print(x,y,w,h)
@@ -332,15 +342,16 @@ def searchStop(image, limitShape, caracterList, labelList):
 
     validContours2 = sorted(validContours, key=itemgetter(0))
     cnt = 0
-    kernel = np.ones((7, 7), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     for x, y, w, h in validContours2:
         if (len(buffer) <= 0):
             break
         cv2.rectangle(img2, (x, y), (x + w, y + h), (0, 255, 126), 3)
         umbral = th[y:y + h, x:x + w]
         # umbral = cv2.GaussianBlur(umbral,(7,7),0)
-        umbral = cv2.medianBlur(umbral, 3)
+        # umbral = cv2.medianBlur(umbral, 3)
         umbral = cv2.dilate(umbral, kernel, iterations=1)
+        umbral = cv2.medianBlur(umbral, 3)
         testImage = umbral
         caracterTest = cv2.resize(testImage, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
         caracterLine = np.asarray(caracterTest.ravel())
@@ -456,9 +467,9 @@ def searchDigits(image, caracterList, labelList):
 #
 # caracterMatrix, labelMatrix = entrenarOCR()
 # image = cv2.imread("./auxiliar_images/stopsign2.jpg")
-# image = cv2.imread("./Training_Images/Training/Images_Sign_Detection_Benchmark\\14\\00000.ppm")
-# image2 = cv2.resize(image.copy(), (200, 200))
-# lista=[45,46,195,196]
-# res = trainAndTest(image2,lista, overwrite=False)
+image = cv2.imread("./Training_Images/Training/Images_Sign_Detection_Benchmark\\14\\00004.ppm")
+image2 = cv2.resize(image.copy(), (200, 200))
+lista = [45, 46, 195, 196]
+res = trainAndTest(image2, lista, overwrite=False)
 # resultado = searchStop(image2, caracterMatrix, labelMatrix)
 # print(resultado)

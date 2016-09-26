@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from sympy.geometry import Point, Triangle
 
 from auxiliar_clases import mathFunctions as Vect
 
@@ -35,16 +36,38 @@ def preProcessImage2(image, stop):
     return channel
 
 
+def nothing(x): pass
 def getBinaryInvMask(RGBImage, stop=False):
     img = RGBImage.copy()
     if (stop):
+        gr = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+        gr = cv2.medianBlur(gr, 15)
         b, g, r = cv2.split(img)
         r = preProcessImage2(r, stop)
         g = preProcessImage2(g, stop)
         b = preProcessImage2(b, stop)
         rgb = [b, g, r]
         processedImage = cv2.merge(rgb)
+        prp = processedImage.copy()
+        grayImage = cv2.cvtColor(prp, cv2.COLOR_BGR2GRAY)
+        ret, threshold = cv2.threshold(grayImage.copy(), 127, 255, cv2.THRESH_BINARY_INV)
+        th3 = cv2.adaptiveThreshold(gr, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 81, 1)
+        threshold = cv2.dilate(threshold, (8, 8), iterations=5)
+        th3 = cv2.dilate(th3, (8, 8), iterations=11)
+        threshold2 = cv2.medianBlur(threshold.copy(), 3)
+        th3 = cv2.medianBlur(threshold.copy(), 5)
+        # prp = cv2.medianBlur(prp,9)
+        # threshold=cv2.dilate(threshold,(33,33),iterations=1)
+        # cv2.imshow("result",processedImage)
+        # cv2.imshow("test",prp)
+        cv2.imshow("threshold", threshold)
+        cv2.imshow("threshold2", threshold2)
+        cv2.imshow("adaptative", th3)
+        cv2.waitKey(800)
+        cv2.destroyAllWindows()
+        return th3
     else:
+
         b, g, r = cv2.split(img)
         r = preProcessImage(r)
         g = preProcessImage(g)
@@ -258,13 +281,20 @@ def find_lines(image, mask):
             ## COMPROBAR SI HAY LINEAS PARALELAS ANTES
             ## HACER UN ACUMULADOR DE RESULTADOS ENTRE FONDO, TRIANGULOS, CIRCULOS PARA RESULTADO DE IMAGEN
             if (Vect.checkAngle(puntos)):
-                return "triangle"
+                listOfPoints = []
+                for point in puntos:
+                    listOfPoints.append(Point(point[0], point[1]))
+                triangle = Triangle(listOfPoints[0], listOfPoints[1], listOfPoints[2])
+                r = triangle.circumradius
+                r = r.evalf()
+                triShape = [puntos, r]
+                return triShape, "triangle"
             # print("Is not a warning triangle shape")
-            return None
+            return None, None
         else:
-            return None
+            return None, None
 
-    return None
+    return None, None
 
 def findCircles(img, param2, minRad=0, maxRad=0):
     try:
@@ -418,7 +448,7 @@ def circles(img, blurMask, cimg, ruta):
         # cv2.circle(ccimg, (ptX, ptY), r, (255, 0, 0), 5)
         c1 = [int(ptX - r - 3), int(ptY - r - 3)]
         c4 = [int(ptX + r + 3), int(ptY + r + 3)]
-        bigger = [c1[0], c1[1], c4[0], c4[1]]
+        bigger = [[c1[0], c1[1], c4[0], c4[1]], r]
         # cv2.rectangle(ccimg, (c1[0], c1[1]), (c4[0], c4[1]), (255, 0, 0), 3)
         # cv2.line(ccimg,(0,c1[1]),(c4[0],c1[1]),(255,0,0),2)
         # cv2.line(ccimg,(0,c4[1]),(c4[0],c4[1]),(0,125,255),2)
@@ -475,6 +505,7 @@ def shapeDetection(img, ruta):
     # circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 10, np.array([]), 100, 30, 1, 30)
     circleShape, NCircles = circles(img.copy(), opening.copy(), cimg, ruta)
     if NCircles is None:
-        return None, find_lines(Icopy.copy(), erosion.copy())
+        triShape, tag = find_lines(Icopy.copy(), erosion.copy())
+        return triShape, tag
     else:
         return circleShape, NCircles
