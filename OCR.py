@@ -270,6 +270,8 @@ def analizarImagen(imag):
 def searchStop(image, limitShape, caracterList, labelList):
     # imgR=cv2.resize(image.copy(),(200,200),interpolation=cv2.INTER_LANCZOS4)
     buffer = ['S', 'T', 'O', 'P']
+    ranX = 5
+    ranY = 5
     print("Searching STOP")
     classifier = GaussianNB()
     classifierKNN = KNeighborsClassifier(n_neighbors=1)
@@ -285,13 +287,7 @@ def searchStop(image, limitShape, caracterList, labelList):
     midshape = (Sx // 2, Sy // 2)
     secTercShape = (2 * Sx // 3 + 1, 2 * Sy // 3 + 1)
     primTercShape = (Sx // 3, Sy // 3)
-    mask = graph.getBinaryInvMask(prueba, True)
-    gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
-    # img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-    th = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 55, 2)
-    # mask=cv2.bitwise_not(mask)
-    # imgBlurred = cv2.GaussianBlur(gray, (5,5), 0)
-    # imgBlurred = cv2.GaussianBlur(mask, (5, 5), 0)
+    mask, th = graph.getBinaryInvMask(prueba, True)
     cv2.imshow("threshold", th)
     cv2.imshow("mask", mask)
     cv2.waitKey(800)
@@ -313,17 +309,17 @@ def searchStop(image, limitShape, caracterList, labelList):
         L1, L2, L3, L4 = limitShape
     cv2.line(img2, (0, L2), (L3, L2), (255, 0, 0), 2)
     cv2.line(img2, (0, L4), (L3, L4), (0, 125, 255), 2)
-    cv2.imshow("rect", img2)
-    cv2.waitKey(800)
-    cv2.destroyAllWindows()
+    # cv2.imshow("rect", img2)
+    # cv2.waitKey(800)
+    # cv2.destroyAllWindows()
     for i in range(0, lenContours):
         cnt = npaContours[i]
         ord = hierarchy[0][i][2]
         x, y, w, h = cv2.boundingRect(cnt)
         ima = img[y:y + h, x:x + w]
-        cv2.imshow("ima", ima)
-        cv2.waitKey(800)
-        cv2.destroyWindow("ima")
+        # cv2.imshow("ima", ima)
+        # cv2.waitKey(800)
+        # cv2.destroyWindow("ima")
         if ((w * h) > 1000 and (w * h) <= 3000):
             if (y >= L2 and y < L4):  # y > primTercShape[1]):
                 ptoX, ptoY = x + w, y + h
@@ -346,12 +342,16 @@ def searchStop(image, limitShape, caracterList, labelList):
     for x, y, w, h in validContours2:
         if (len(buffer) <= 0):
             break
-        cv2.rectangle(img2, (x, y), (x + w, y + h), (0, 255, 126), 3)
-        umbral = th[y:y + h, x:x + w]
+        cv2.rectangle(img2, (x - 20, y - 20), (x + w + 20, y + h + 20), (0, 255, 126), 3)
+        puntoY = y - ranY
+        puntoX = x - ranX
+        if (puntoX < 0): puntoX = 0
+        if (puntoY < 0): puntoY = 0
+        umbral = th[puntoY:y + h + ranY, puntoX:x + w + ranX]
         # umbral = cv2.GaussianBlur(umbral,(7,7),0)
         # umbral = cv2.medianBlur(umbral, 3)
-        umbral = cv2.dilate(umbral, kernel, iterations=1)
-        umbral = cv2.medianBlur(umbral, 3)
+        umbral = cv2.medianBlur(umbral, 9)
+        umbral = cv2.dilate(umbral, (3, 3), iterations=3)
         testImage = umbral
         caracterTest = cv2.resize(testImage, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
         caracterLine = np.asarray(caracterTest.ravel())
@@ -467,9 +467,10 @@ def searchDigits(image, caracterList, labelList):
 #
 # caracterMatrix, labelMatrix = entrenarOCR()
 # image = cv2.imread("./auxiliar_images/stopsign2.jpg")
-image = cv2.imread("./Training_Images/Training/Images_Sign_Detection_Benchmark\\14\\00004.ppm")
+image = cv2.imread("./Training_Images/Training/Images_Sign_Detection_Benchmark\\14\\00000.ppm")
 image2 = cv2.resize(image.copy(), (200, 200))
 lista = [45, 46, 195, 196]
 res = trainAndTest(image2, lista, overwrite=False)
+print(res)
 # resultado = searchStop(image2, caracterMatrix, labelMatrix)
 # print(resultado)
