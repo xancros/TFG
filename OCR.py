@@ -320,9 +320,10 @@ def searchStop(image, limitShape, caracterList, labelList):
         # cv2.imshow("ima", ima)
         # cv2.waitKey(800)
         # cv2.destroyWindow("ima")
+        ptoX, ptoY = x + w, y + h
         if ((w * h) > 1000 and (w * h) <= 3000):
-            if (y >= L2 and y < L4):  # y > primTercShape[1]):
-                ptoX, ptoY = x + w, y + h
+            if (ptoY >= L2 and ptoY < L4):  # y > primTercShape[1]):
+
                 if (1):
                     if (1):  # ord != -1):
                         # print(hierarchy[0][i])
@@ -467,7 +468,7 @@ def searchDigits(image, caracterList, labelList):
 #
 # caracterMatrix, labelMatrix = entrenarOCR()
 # image = cv2.imread("./auxiliar_images/stopsign2.jpg")
-image = cv2.imread("./Training_Images/Training/Images_Sign_Detection_Benchmark\\14\\00000.ppm")
+image = cv2.imread("./Training_Images/Training/Images_Sign_Detection_Benchmark\\14\\00001.ppm")
 image2 = cv2.resize(image.copy(), (200, 200))
 lista = [45, 46, 195, 196]
 res = trainAndTest(image2, lista, overwrite=False)
