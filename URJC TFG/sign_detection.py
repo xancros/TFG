@@ -42,12 +42,13 @@ def train():
             subF = os.path.join(parcial_path, subfolder)
             for filename in os.listdir(subF):
                 if os.path.splitext(filename)[1].lower() in test_ext:
-                    print("Test, processing ", subF+"\\"+filename, "\n");
+                    lista = []
+                    print("Test, processing ", subF+"\\"+filename, "\n")
                     full_path = os.path.join(subF, filename)
                     I = cv2.imread(full_path)
                     Icopy = I.copy()
                     Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
-
+                    shape = Icopy.shape
                     regions = mser.detectRegions(Igray, None)
                     rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
                     for r in rects:
@@ -56,9 +57,24 @@ def train():
                         aratio = float(w) / float(h)
                         if (aratio > 1.2) or (aratio < 0.8):
                             continue
-                        cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        # cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        lista.append([x,y,x+w,y+h])
+                    miLista= set(tuple(i) for i in lista)
+                    max = lista[0]
+                   # for index in range (1,miLista.__len__()):
+                    for elem in miLista:
+                        if max[0]>elem[0] and max[3]<elem[3]:
+                            max = elem
+                    area1 = max
+                    #### LLAMADA A PROCESO LDA
+                    area2 = [max[0]*0.1,max[1]*0.1,max[2]*0.1,max[3]*0.1]
+                    #### LLAMADA A PROCESO LDA
+                    if area2[0]<0 or area2[1]<0 or area2[2]>shape[0] or area2[3]>shape[1]:
+                        continue
+                    # cv2.rectangle(Icopy, (max[0], max[1]), (max[2], max[3]), (0, 255, 0), 2)
+                    # cv2.imshow('img', Icopy)
+                    # cv2.waitKey(0)
+                    # cv2.destroyWindow("img")
 
-                    cv2.imshow('img', Icopy)
-                    cv2.waitKey(0)
 
 train()
