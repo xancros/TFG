@@ -11,6 +11,8 @@ test_dir = 'Imagenes Deteccion/test/'
 TRAIN_DIR = 'Imagenes Deteccion/train/'
 test_ext = ('.jpg', '.ppm')
 
+windowArray=[]
+
 def test():
         for filename in os.listdir(test_dir):
             if os.path.splitext(filename)[1].lower() in test_ext:
@@ -32,6 +34,11 @@ def test():
 
                 cv2.imshow('img', Icopy)
                 cv2.waitKey(0)
+
+def LDA():
+    print("·")
+    # caracter = cv2.resize(umbralcut, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
+
 
 def train():
     for folder in os.listdir(TRAIN_DIR):
@@ -67,14 +74,22 @@ def train():
                             max = elem
                     area1 = max
                     #### LLAMADA A PROCESO LDA
-                    area2 = [max[0]*0.1,max[1]*0.1,max[2]*0.1,max[3]*0.1]
+                    area2 = [(max[0]*0.1)+(max[0]),(max[1]*0.1)+(max[1]),(max[2]*0.1)+(max[2]),(max[3]*0.1)+(max[3])]
                     #### LLAMADA A PROCESO LDA
+                    window = Icopy[max[1]:max[1] + max[3], max[0]:max[0] + max[2]]
+                    windowEXT = Icopy[area2[1]:area2[1] + area2[3], area2[0]:area2[0] + area2[2]]
+                    cv2.imshow('img', window)
+                    cv2.imshow('img2', windowEXT)
+                    cv2.waitKey()
+                    cv2.destroyAllWindows()
                     if area2[0]<0 or area2[1]<0 or area2[2]>shape[0] or area2[3]>shape[1]:
                         continue
+
                     # cv2.rectangle(Icopy, (max[0], max[1]), (max[2], max[3]), (0, 255, 0), 2)
                     # cv2.imshow('img', Icopy)
                     # cv2.waitKey(0)
                     # cv2.destroyWindow("img")
+
 
 
 train()
