@@ -44,9 +44,8 @@ def LDA():
     lowerWindow = np.vstack(windowArray)
     upperWindow = np.vstack(windowArray10)
     E = np.array(labels)
-    clasificadorLower.fit(lowerWindow,E)
-    clasificadorHigher.fit(upperWindow,E)
-    
+    vectorCLower=clasificadorLower.fit_transform(lowerWindow,E)
+    vectorCUpper=clasificadorHigher.fit_transform(upperWindow,E)
 
 
 def train():
@@ -120,3 +119,4 @@ def train():
 
 train()
 print(windowArray)
+LDA()
