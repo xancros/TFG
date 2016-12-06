@@ -5,13 +5,13 @@ import numpy as np
 # import matplotlib as plt
 import os
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as lda
-
+np.set_printoptions(suppress=True)
 mser = cv2.MSER_create()
 
 test_dir = 'Imagenes Deteccion/test/'
 TRAIN_DIR = 'Imagenes Deteccion/train/'
 test_ext = ('.jpg', '.ppm')
-
+diccionario = {'Prohibicion':0,'Peligro':1,'Otros':2}
 windowArray = []
 windowArray10 = []
 labels = []
@@ -40,16 +40,23 @@ def test():
                 cv2.imshow('img', Icopy)
                 cv2.waitKey(0)
 def LDA():
+    global windowArray
+    global windowArray10
+    global labels
     print("·")
     lowerWindow = np.vstack(windowArray)
     upperWindow = np.vstack(windowArray10)
     E = np.array(labels)
-    vectorCLower=clasificadorLower.fit_transform(lowerWindow,E)
+    clasificadorLower.fit(lowerWindow,E)
+    vectorCLower=clasificadorLower.transform(lowerWindow)
     vectorCUpper=clasificadorHigher.fit_transform(upperWindow,E)
-
+    CR = vectorCUpper.astype(np.float32,copy=True)
+    CRL = cv2.ml.NormalBayesClassifier_create()
+    CRL.train(CR,cv2.ml.ROW_SAMPLE,E)
 
 def train():
     global windowArray
+    global windowArray10
     global labels
     for folder in os.listdir(TRAIN_DIR):
         parcial_path = os.path.join(TRAIN_DIR, folder)
@@ -57,6 +64,7 @@ def train():
             continue
         for subfolder in os.listdir(parcial_path):
             subF = os.path.join(parcial_path, subfolder)
+            count = 0
             for filename in os.listdir(subF):
                 if os.path.splitext(filename)[1].lower() in test_ext:
                     lista = []
@@ -89,7 +97,7 @@ def train():
                         #### LLAMADA A PROCESO LDA
                         window = Icopy[max[1]:max[1] + max[3], max[0]:max[0] + max[2]]
                         # windowArray.append(window)
-                        window = cv2.resize(window, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
+                        window = cv2.resize(window, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
                         lab = None
                         if subF.__contains__("Peligro"):
                             lab = "Peligro"
@@ -97,7 +105,7 @@ def train():
                             lab = "Prohibicion"
                         else:
                             lab = "Otros"
-                        labels.append(lab)
+                        labels.append(diccionario.get(lab))
                         windowArray.append(window.ravel())
                         # cv2.imshow('img', window)
                         # cv2.imshow('img2', windowEXT)
@@ -107,8 +115,12 @@ def train():
                             windowArray10.append(window.ravel())
                         else:
                             windowEXT = Icopy[area2[1]:area2[1] + area2[3], area2[0]:area2[0] + area2[2]]
-                            windowEXT = cv2.resize(windowEXT, (10, 10), None, 0, 0, cv2.INTER_NEAREST)
+                            windowEXT = cv2.resize(windowEXT, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
                             windowArray10.append(windowEXT.ravel())
+
+                        # if count == 1:
+                        #     return
+                        # count+=1
                         # windowArray.append(windowEXT)
                         # cv2.rectangle(Icopy, (max[0], max[1]), (max[2], max[3]), (0, 255, 0), 2)
                         # cv2.imshow('img', Icopy)
