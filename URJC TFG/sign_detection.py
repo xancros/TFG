@@ -50,9 +50,37 @@ def LDA():
     clasificadorLower.fit(lowerWindow,E)
     vectorCLower=clasificadorLower.transform(lowerWindow)
     vectorCUpper=clasificadorHigher.fit_transform(upperWindow,E)
-    CR = vectorCUpper.astype(np.float32,copy=True)
-    CRL = cv2.ml.NormalBayesClassifier_create()
-    CRL.train(CR,cv2.ml.ROW_SAMPLE,E)
+    CRU = vectorCUpper.astype(np.float32,copy=True)
+    CLU = cv2.ml.NormalBayesClassifier_create()
+    CLU.train(CRU,cv2.ml.ROW_SAMPLE,E)
+    CRL = vectorCLower.astype(np.float32, copy=True)
+    CLL = cv2.ml.NormalBayesClassifier_create()
+    CLL.train(CRL, cv2.ml.ROW_SAMPLE, E)
+    print()
+    ###########################
+
+    test = cv2.imread(TRAIN_DIR+"/Prohibicion/00/00000.ppm")
+    Icopy = test.copy()
+    Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
+    shape = Icopy.shape
+    regions = mser.detectRegions(Igray, None)
+    rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
+    for r in rects:
+        x, y, w, h = r
+        # Simple aspect ratio filtering
+        aratio = float(w) / float(h)
+        if (aratio > 1.2) or (aratio < 0.8):
+            continue
+        areaTest = Icopy[y:y + h, x:x + w]
+        senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+        signal = np.asarray(senal).ravel()
+        signalT = clasificadorLower.transform(signal)
+        vectorSignalT = signalT.astype(np.float32)
+        results = CLL.predictProb(vectorSignalT)
+        indexImage = results[0]
+        print()
+    ###########################
+
 
 def train():
     global windowArray
