@@ -11,7 +11,7 @@ mser = cv2.MSER_create()
 test_dir = 'Imagenes Deteccion/test/'
 TRAIN_DIR = 'Imagenes Deteccion/train/'
 test_ext = ('.jpg', '.ppm')
-diccionario = {'Prohibicion':0,'Peligro':1,'Otros':2}
+diccionario = {'Prohibicion':0,'Peligro':1,'Stop':2,'Otros':3}
 windowArray = []
 windowArray10 = []
 labels = []
@@ -59,7 +59,7 @@ def LDA():
     print()
     ###########################
 
-    test = cv2.imread(TRAIN_DIR+"/Prohibicion/00/00000.ppm")
+    test = cv2.imread(TRAIN_DIR+"/Otros/06/00000.ppm")
     Icopy = test.copy()
     Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
     shape = Icopy.shape
@@ -72,13 +72,17 @@ def LDA():
         if (aratio > 1.2) or (aratio < 0.8):
             continue
         areaTest = Icopy[y:y + h, x:x + w]
+        cv2.imshow("imagen", test)
+        cv2.imshow("area",areaTest)
+        cv2.waitKey(1200)
+        cv2.destroyAllWindows()
         senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
         signal = np.asarray(senal).ravel()
         signalT = clasificadorLower.transform(signal)
         vectorSignalT = signalT.astype(np.float32)
-        results = CLL.predictProb(vectorSignalT)
-        indexImage = results[0]
-        print()
+        _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+
+        print("Clase supuesta -> ",(Yhat1[0])[0])
     ###########################
 
 
@@ -88,8 +92,6 @@ def train():
     global labels
     for folder in os.listdir(TRAIN_DIR):
         parcial_path = os.path.join(TRAIN_DIR, folder)
-        if(parcial_path.__contains__("Otros")):
-            continue
         for subfolder in os.listdir(parcial_path):
             subF = os.path.join(parcial_path, subfolder)
             count = 0
@@ -131,6 +133,8 @@ def train():
                             lab = "Peligro"
                         elif subF.__contains__("Prohibicion"):
                             lab = "Prohibicion"
+                        elif subF.__contains__("Stop"):
+                            lab = "Stop"
                         else:
                             lab = "Otros"
                         labels.append(diccionario.get(lab))
