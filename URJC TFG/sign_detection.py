@@ -17,6 +17,7 @@ windowArray10 = []
 labels = []
 clasificadorLower = lda()
 clasificadorHigher = lda()
+res = []
 
 def test():
         for filename in os.listdir(test_dir):
@@ -65,6 +66,7 @@ def LDA():
     shape = Icopy.shape
     regions = mser.detectRegions(Igray, None)
     rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
+    file = open("salidaRe.txt",'w')
     for r in rects:
         x, y, w, h = r
         # Simple aspect ratio filtering
@@ -72,29 +74,33 @@ def LDA():
         if (aratio > 1.2) or (aratio < 0.8):
             continue
         areaTest = Icopy[y:y + h, x:x + w]
-        cv2.imshow("imagen", test)
-        cv2.imshow("area",areaTest)
-        cv2.waitKey(1200)
+        # cv2.imshow("imagen", test)
+        # cv2.imshow("area",areaTest)
+        # cv2.waitKey(1200)
         cv2.destroyAllWindows()
         senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
-        signal = np.asarray(senal).ravel()
+        signal = (np.asarray(senal)).reshape(1,-1)
         signalT = clasificadorLower.transform(signal)
         vectorSignalT = signalT.astype(np.float32)
         _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
-
+        file.write("Clase supuesta -> " +str((Yhat1[0])[0])+"\n")
         print("Clase supuesta -> ",(Yhat1[0])[0])
     ###########################
-
+    file.close()
 
 def train():
     global windowArray
     global windowArray10
     global labels
+    global res
+    count = 0
+    count2 = 0
+    listaImagenes = []
+    numOtros, numStop,numPeligro,numPro = 0,0,0,0
     for folder in os.listdir(TRAIN_DIR):
         parcial_path = os.path.join(TRAIN_DIR, folder)
         for subfolder in os.listdir(parcial_path):
             subF = os.path.join(parcial_path, subfolder)
-            count = 0
             for filename in os.listdir(subF):
                 if os.path.splitext(filename)[1].lower() in test_ext:
                     lista = []
@@ -131,12 +137,16 @@ def train():
                         lab = None
                         if subF.__contains__("Peligro"):
                             lab = "Peligro"
+                            numPeligro+=1
                         elif subF.__contains__("Prohibicion"):
                             lab = "Prohibicion"
+                            numPro += 1
                         elif subF.__contains__("Stop"):
                             lab = "Stop"
+                            numStop += 1
                         else:
                             lab = "Otros"
+                            numOtros += 1
                         labels.append(diccionario.get(lab))
                         windowArray.append(window.ravel())
                         # cv2.imshow('img', window)
@@ -149,7 +159,8 @@ def train():
                             windowEXT = Icopy[area2[1]:area2[1] + area2[3], area2[0]:area2[0] + area2[2]]
                             windowEXT = cv2.resize(windowEXT, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
                             windowArray10.append(windowEXT.ravel())
-
+                        count+=1
+                    listaImagenes.append(subF+"\\"+filename)
                         # if count == 1:
                         #     return
                         # count+=1
@@ -158,9 +169,23 @@ def train():
                         # cv2.imshow('img', Icopy)
                         # cv2.waitKey(0)
                         # cv2.destroyWindow("img")
-
-
-
+    print(count)
+    cantidadOtros, cantidadStop, cantidadPeligro, cantidadPro = 0, 0, 0, 0
+    tamLista = listaImagenes.__len__()
+    numImagenesPorCierto = int(np.round(tamLista*0.2))+1
+    for i in range (0,tamLista):
+        randInt = np.random.randint(0, tamLista)
+        imagenRandom = listaImagenes[randInt]
+        if(len(res)==numImagenesPorCierto):
+            break
+        if not res.__contains__(imagenRandom):
+            res.append(imagenRandom)
+        else:
+            randInt = np.random.randint(0, numImagenesPorCierto)
+            imagenRandom = listaImagenes[randInt]
+            if not res.__contains__(imagenRandom):
+                res.append(imagenRandom)
+    print()
 train()
-print(windowArray)
+print("----------------------")
 LDA()
