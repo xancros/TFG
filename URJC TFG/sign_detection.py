@@ -59,34 +59,61 @@ def LDA():
     CLL.train(CRL, cv2.ml.ROW_SAMPLE, E)
     print()
     ###########################
-
-    test = cv2.imread(TRAIN_DIR+"/Otros/06/00000.ppm")
-    Icopy = test.copy()
-    Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
-    shape = Icopy.shape
-    regions = mser.detectRegions(Igray, None)
-    rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
-    file = open("salidaRe.txt",'w')
-    for r in rects:
-        x, y, w, h = r
-        # Simple aspect ratio filtering
-        aratio = float(w) / float(h)
-        if (aratio > 1.2) or (aratio < 0.8):
-            continue
-        areaTest = Icopy[y:y + h, x:x + w]
-        # cv2.imshow("imagen", test)
-        # cv2.imshow("area",areaTest)
-        # cv2.waitKey(1200)
+    path = ("salida.txt")
+    file = open(path, 'w')
+    for imagen in res:
+        test = cv2.imread(imagen)
+        fileNameArr=imagen.split("/")
+        fileName = fileNameArr[len(fileNameArr)-1]
+        fileName = fileName.replace("\\","_")
+        Icopy = test.copy()
+        Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
+        shape = Icopy.shape
+        regions = mser.detectRegions(Igray, None)
+        rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
+        print("Test, processing "+imagen+"\n")
+        file.write("Test, processing "+imagen+"\n")
+        otros,peligro,stop,prohibicion = 0,0,0,0
+        for r in rects:
+            x, y, w, h = r
+            # Simple aspect ratio filtering
+            aratio = float(w) / float(h)
+            if (aratio > 1.2) or (aratio < 0.8):
+                continue
+            areaTest = Icopy[y:y + h, x:x + w]
+            # cv2.imshow("imagen", test)
+            # cv2.imshow("area",areaTest)
+            # cv2.waitKey(1200)
+            cv2.destroyAllWindows()
+            senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+            signal = (np.asarray(senal)).reshape(1,-1)
+            signalT = clasificadorLower.transform(signal)
+            vectorSignalT = signalT.astype(np.float32)
+            _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+            ##tengo que cambiar esto para que no salgan tantas lineas, sino que cuente cuantas de clase 0,1,2,3 y 4 lineas nada mas
+            if imagen.__contains__("Otros"):
+                otros+=1
+            elif imagen.__contains__("Stop"):
+                stop+=1
+            elif imagen.__contains__("Prohibicion"):
+                prohibicion+=1
+            elif imagen.__contains__("Peligro"):
+                peligro+=1
+        ###########################
+        clases = [prohibicion,peligro,stop,otros]
+        maximo = np.amax(clases)
+        clase = np.where(clases==maximo)[0][0]
+        file.write("Clase supuesta -> " + str(clase) + "\n")
+        file.write("--------------------------------------"+"\n")
+        file.write("Cuanta cantidad de Fondo se reconoce en la imagen ->"+str(otros)+"\n")
+        file.write("Cuanta cantidad de Peligro se reconoce en la imagen ->" + str(peligro)+"\n")
+        file.write("Cuanta cantidad de Prohibicion se reconoce en la imagen ->" + str(prohibicion)+"\n")
+        file.write("Cuanta cantidad de Stop se reconoce en la imagen ->" + str(stop)+"\n")
+        file.write("--------------------------------------"+"\n")
+        file.close()
+        cv2.imshow("TEST", test)
+        cv2.waitKey()
         cv2.destroyAllWindows()
-        senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
-        signal = (np.asarray(senal)).reshape(1,-1)
-        signalT = clasificadorLower.transform(signal)
-        vectorSignalT = signalT.astype(np.float32)
-        _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
-        file.write("Clase supuesta -> " +str((Yhat1[0])[0])+"\n")
-        print("Clase supuesta -> ",(Yhat1[0])[0])
-    ###########################
-    file.close()
 
 def train():
     global windowArray
