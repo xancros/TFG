@@ -2,49 +2,131 @@
 # Simple MSER application for traffic sign window proposal generation
 import cv2
 import numpy as np
-# import matplotlib as plt
-import os
+import matplotlib.pyplot as plt
+import os,inspect
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as lda
 np.set_printoptions(suppress=True)
 mser = cv2.MSER_create()
 
-test_dir = 'Imagenes Deteccion/test/'
-TRAIN_DIR = 'Imagenes Deteccion/train/'
+script_directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+test_dir = script_directory+"/Imagenes Deteccion/test/"
+TRAIN_DIR = script_directory+"/Imagenes Deteccion/train/"
 test_ext = ('.jpg', '.ppm')
 diccionario = {'Prohibicion':0,'Peligro':1,'Stop':2,'Otros':3}
 windowArray = []
 windowArray10 = []
 labels = []
+
 clasificadorLower = lda()
 clasificadorHigher = lda()
 res = []
+CLL = None
+CLU = None
 
-def test():
+def testTrain():
+        global windowArray
+        global windowArray10
+        global labels
+        global clasificadorLower
+        global clasificadorHigher
+        global CLL
+        global CLU
+        path = (script_directory + "/pruebaTestLower.txt")
+        file = open(path, 'w')
         for filename in os.listdir(test_dir):
             if os.path.splitext(filename)[1].lower() in test_ext:
-                print ("Test, processing ", filename, "\n");
+                print ("Test, processing ", filename, "\n")
                 full_path = os.path.join(test_dir, filename)
-                I = cv2.imread(full_path)
-                Icopy = I.copy()
-                Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
-
+                imagen = full_path
+                test = cv2.imread(imagen)
+                testRGB = cv2.cvtColor(test.copy(), cv2.COLOR_BGR2RGB)
+                fileNameArr = imagen.split("/")
+                fileName = fileNameArr[len(fileNameArr) - 1]
+                fileName = fileName.replace("\\", "_")
+                Icopy = test.copy()
+                Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
+                shape = Icopy.shape
                 regions = mser.detectRegions(Igray, None)
-                rects = [cv2.boundingRect(p.reshape(-1,1,2)) for p in regions]
+                rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
+                print("Usando imagenes de train para test, processing " + imagen + "\n")
+                file.write("Test, processing " + imagen + "\n")
+                # fileH.write("Test, processing " + imagen + "\n")
+                otros, peligro, stop, prohibicion = 0, 0, 0, 0
                 for r in rects:
-                   x,y,w,h = r
-                   # Simple aspect ratio filtering
-                   aratio = float(w)/float(h)
-                   if (aratio > 1.2) or (aratio < 0.8):
-                       continue
-                   cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    x, y, w, h = r
+                    # Simple aspect ratio filtering
+                    aratio = float(w) / float(h)
+                    if (aratio > 1.2) or (aratio < 0.8):
+                        continue
+                    areaTest = Icopy[y:y + h, x:x + w]
+                    # cv2.imshow("imagen", test)
+                    # cv2.imshow("area",areaTest)
+                    # cv2.waitKey(800)
+                    # cv2.destroyWindow("area")
+                    # # cv2.destroyAllWindows()
+                    x1 = int(x * 0.1) + x
+                    xw = x + w
+                    x2 = int(xw * 0.1) + xw
+                    y1 = int(y * 0.1) + y
+                    yh = y + h
+                    y2 = int(yh * 0.1) + yh
+                    if x1 < 0 or y1 < 0 or x2 > shape[0] or y2 > shape[1]:
+                        area2 = areaTest
+                    else:
+                        area2 = Icopy[y1:y1 + y2, x1:x1 + x2]
+                    senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+                    signal = (np.asarray(senal)).reshape(1, -1)
+                    signalT = clasificadorLower.transform(signal)
+                    vectorSignalT = signalT.astype(np.float32)
+                    _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+                    ##tengo que cambiar esto para que no salgan tantas lineas, sino que cuente cuantas de clase 0,1,2,3 y 4 lineas nada mas
+                    if imagen.__contains__("Otros"):
+                        otros += 1
+                    elif imagen.__contains__("Stop"):
+                        stop += 1
+                    elif imagen.__contains__("Prohibicion"):
+                        prohibicion += 1
+                    elif imagen.__contains__("Peligro"):
+                        peligro += 1
+                ###########################
+                clases = [prohibicion, peligro, stop, otros]
+                maximo = np.amax(clases)
+                clase = np.where(clases == maximo)[0][0]
+                labClase = ""
+                if clase == 0:
+                    labClase = "Prohibicion"
 
-                cv2.imshow('img', Icopy)
-                cv2.waitKey(0)
+                elif clase == 1:
+                    labClase = "Peligro"
+                elif clase == 2:
+                    labClase = "Stop"
+                elif clase == 3:
+                    labClase = "Otros"
+                coord = [x, y, (x + w), (y + h)]
+                coordenadas = (
+                "X:" + str(coord[0]) + " Y:" + str(coord[1]) + " X2:" + str(coord[2]) + " Y2:" + str(coord[3]))
+                file.write("Clase supuesta -> " + str(clase) + "(" + labClase + ")" + "\n")
+                if not labClase.__eq__("Otros"):
+                    file.write("Coordenadas = " + coordenadas + "\n")
+                    cv2.imshow("imagen", test)
+                    plt.imshow(testRGB, interpolation="bicubic")
+                    plt.show()
+                    cv2.waitKey()
+                    cv2.destroyAllWindows()
+                file.write("--------------------------------------" + "\n")
+                file.write("Cuanta cantidad de Fondo se reconoce en la imagen ->" + str(otros) + "\n")
+                file.write("Cuanta cantidad de Peligro se reconoce en la imagen ->" + str(peligro) + "\n")
+                file.write("Cuanta cantidad de Prohibicion se reconoce en la imagen ->" + str(prohibicion) + "\n")
+                file.write("Cuanta cantidad de Stop se reconoce en la imagen ->" + str(stop) + "\n")
+                file.write("--------------------------------------" + "\n")
 def LDA():
     global windowArray
     global windowArray10
     global labels
-    print("·")
+    global clasificadorLower
+    global clasificadorHigher
+    global CLL
+    global CLU
     lowerWindow = np.vstack(windowArray)
     upperWindow = np.vstack(windowArray10)
     E = np.array(labels)
@@ -58,22 +140,40 @@ def LDA():
     CLL = cv2.ml.NormalBayesClassifier_create()
     CLL.train(CRL, cv2.ml.ROW_SAMPLE, E)
     print()
+
+    print()
+
+
+def validacionCruzada():
+    global windowArray
+    global windowArray10
+    global labels
+    global clasificadorLower
+    global clasificadorHigher
+    global CLL
+    global CLU
     ###########################
-    path = ("salida.txt")
+    path = (script_directory + "/salidaLower.txt")
     file = open(path, 'w')
+    path2 = (script_directory + "/salidaHigher.txt")
+    fileH = open(path2, 'w')
+    contadorU,contadorL=0,0
     for imagen in res:
+
         test = cv2.imread(imagen)
-        fileNameArr=imagen.split("/")
-        fileName = fileNameArr[len(fileNameArr)-1]
-        fileName = fileName.replace("\\","_")
+        testRGB = cv2.cvtColor(test.copy(), cv2.COLOR_BGR2RGB)
+        fileNameArr = imagen.split("/")
+        fileName = fileNameArr[len(fileNameArr) - 1]
+        fileName = fileName.replace("\\", "_")
         Icopy = test.copy()
         Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
         shape = Icopy.shape
         regions = mser.detectRegions(Igray, None)
         rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
-        print("Test, processing "+imagen+"\n")
-        file.write("Test, processing "+imagen+"\n")
-        otros,peligro,stop,prohibicion = 0,0,0,0
+        print("Usando imagenes de train para test, processing " + imagen + "\n")
+        file.write("Test, processing " + imagen + "\n")
+        fileH.write("Test, processing " + imagen + "\n")
+        otros, peligro, stop, prohibicion = 0, 0, 0, 0
         for r in rects:
             x, y, w, h = r
             # Simple aspect ratio filtering
@@ -84,36 +184,100 @@ def LDA():
             # cv2.imshow("imagen", test)
             # cv2.imshow("area",areaTest)
             # cv2.waitKey(1200)
-            cv2.destroyAllWindows()
+            # cv2.destroyAllWindows()
+            x1 = int(x*0.1)+x
+            xw = x+w
+            x2 = int(xw*0.1)+xw
+            y1 = int(y*0.1)+y
+            yh = y+h
+            y2 = int(yh*0.1)+yh
+            if x1 < 0 or y1 < 0 or x2 > shape[0] or y2 > shape[1]:
+                area2=areaTest
+            else:
+                area2 = Icopy[y1:y1+y2,x1:x1+x2]
             senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
-            signal = (np.asarray(senal)).reshape(1,-1)
+            signal = (np.asarray(senal)).reshape(1, -1)
             signalT = clasificadorLower.transform(signal)
             vectorSignalT = signalT.astype(np.float32)
             _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
             ##tengo que cambiar esto para que no salgan tantas lineas, sino que cuente cuantas de clase 0,1,2,3 y 4 lineas nada mas
             if imagen.__contains__("Otros"):
-                otros+=1
+                otros += 1
             elif imagen.__contains__("Stop"):
-                stop+=1
+                stop += 1
             elif imagen.__contains__("Prohibicion"):
-                prohibicion+=1
+                prohibicion += 1
             elif imagen.__contains__("Peligro"):
-                peligro+=1
+                peligro += 1
         ###########################
-        clases = [prohibicion,peligro,stop,otros]
+        clases = [prohibicion, peligro, stop, otros]
         maximo = np.amax(clases)
-        clase = np.where(clases==maximo)[0][0]
-        file.write("Clase supuesta -> " + str(clase) + "\n")
-        file.write("--------------------------------------"+"\n")
-        file.write("Cuanta cantidad de Fondo se reconoce en la imagen ->"+str(otros)+"\n")
-        file.write("Cuanta cantidad de Peligro se reconoce en la imagen ->" + str(peligro)+"\n")
-        file.write("Cuanta cantidad de Prohibicion se reconoce en la imagen ->" + str(prohibicion)+"\n")
-        file.write("Cuanta cantidad de Stop se reconoce en la imagen ->" + str(stop)+"\n")
-        file.write("--------------------------------------"+"\n")
-        file.close()
-        cv2.imshow("TEST", test)
-        cv2.waitKey()
-        cv2.destroyAllWindows()
+        clase = np.where(clases == maximo)[0][0]
+        labClase = ""
+        if clase == 0:
+            labClase = "Prohibicion"
+
+        elif clase == 1:
+            labClase = "Peligro"
+        elif clase == 2:
+            labClase = "Stop"
+        elif clase == 3:
+            labClase = "Otros"
+        coord = [x,y,(x+w),(y+h)]
+        coordenadas = ("X:"+str(coord[0])+" Y:"+str(coord[1])+" X2:"+str(coord[2])+" Y2:"+str(coord[3]))
+        file.write("Clase supuesta -> " + str(clase) + "(" + labClase + ")" + "\n")
+        if not labClase.__eq__("Otros"):
+            file.write ("Coordenadas = "+coordenadas+"\n")
+        file.write("--------------------------------------" + "\n")
+        file.write("Cuanta cantidad de Fondo se reconoce en la imagen ->" + str(otros) + "\n")
+        file.write("Cuanta cantidad de Peligro se reconoce en la imagen ->" + str(peligro) + "\n")
+        file.write("Cuanta cantidad de Prohibicion se reconoce en la imagen ->" + str(prohibicion) + "\n")
+        file.write("Cuanta cantidad de Stop se reconoce en la imagen ->" + str(stop) + "\n")
+        file.write("--------------------------------------" + "\n")
+        otros, peligro, stop, prohibicion = 0, 0, 0, 0
+        senal = cv2.resize(area2, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+        signal = (np.asarray(senal)).reshape(1, -1)
+        signalT = clasificadorLower.transform(signal)
+        vectorSignalT = signalT.astype(np.float32)
+        _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+        ##tengo que cambiar esto para que no salgan tantas lineas, sino que cuente cuantas de clase 0,1,2,3 y 4 lineas nada mas
+        if imagen.__contains__("Otros"):
+            otros += 1
+        elif imagen.__contains__("Stop"):
+            stop += 1
+        elif imagen.__contains__("Prohibicion"):
+            prohibicion += 1
+        elif imagen.__contains__("Peligro"):
+            peligro += 1
+            ###########################
+        clases = [prohibicion, peligro, stop, otros]
+        maximo = np.amax(clases)
+        clase = np.where(clases == maximo)[0][0]
+        labClase = ""
+        if clase == 0:
+            labClase = "Prohibicion"
+        elif clase == 1:
+            labClase = "Peligro"
+        elif clase == 2:
+            labClase = "Stop"
+        elif clase == 3:
+            labClase = "Otros"
+
+        fileH.write("Clase supuesta -> " + str(clase) + "(" + labClase + ")" + "\n")
+        fileH.write("--------------------------------------" + "\n")
+        fileH.write("Cuanta cantidad de Fondo se reconoce en la imagen ->" + str(otros) + "\n")
+        fileH.write("Cuanta cantidad de Peligro se reconoce en la imagen ->" + str(peligro) + "\n")
+        fileH.write("Cuanta cantidad de Prohibicion se reconoce en la imagen ->" + str(prohibicion) + "\n")
+        fileH.write("Cuanta cantidad de Stop se reconoce en la imagen ->" + str(stop) + "\n")
+        fileH.write("--------------------------------------" + "\n")
+        # plt.imshow(testRGB, interpolation="bicubic")
+        # plt.show()
+        # plt.close()
+        # cv2.imshow("TEST", test)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
+    file.close()
+    fileH.close()
 
 def train():
     global windowArray
@@ -216,3 +380,6 @@ def train():
 train()
 print("----------------------")
 LDA()
+print("----------------------")
+testTrain()
+validacionCruzada()
