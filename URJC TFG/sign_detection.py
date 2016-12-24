@@ -24,6 +24,13 @@ CLL = None
 CLU = None
 
 def printAreaTest():
+    global windowArray
+    global windowArray10
+    global labels
+    global clasificadorLower
+    global clasificadorHigher
+    global CLL
+    global CLU
     area2 = []
     for filename in os.listdir(test_dir):
         if os.path.splitext(filename)[1].lower() in test_ext:
@@ -57,6 +64,22 @@ def printAreaTest():
                 area2 = I[pY1:pY2,pX1:pX2]
                 lenArea = np.array(area2).size
                 if(lenArea>0):
+                    clase=""
+                    senal = cv2.resize(area, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+                    signal = (np.asarray(senal)).reshape(1, -1)
+                    signalT = clasificadorLower.transform(signal)
+                    vectorSignalT = signalT.astype(np.float32)
+                    _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+                    labClase = ""
+                    if clase == 0:
+                        labClase = "Prohibicion"
+
+                    elif clase == 1:
+                        labClase = "Peligro"
+                    elif clase == 2:
+                        labClase = "Stop"
+                    elif clase == 3:
+                        labClase = "Otros"
                     cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     cv2.rectangle(Icopy,(pX1,pY1),(pX2,pY2),(255,0,0),2)
                     cv2.circle(Icopy,(pX1,pY1),4,(0,0,255),-1)
@@ -65,9 +88,10 @@ def printAreaTest():
                     cv2.circle(Icopy, (pX2, pY2), 4, (0, 255, 255), -1)
                     cv2.imshow("area",area)
                     cv2.imshow("area2",area2)
-                    cv2.imshow("imagen",Icopy)
+                    # cv2.imshow("imagen",Icopy)
                     cv2.waitKey(500)
                     cv2.destroyAllWindows()
+
                     Icopy=I.copy()
             cv2.imshow('img', Icopy)
             cv2.waitKey(0)
