@@ -35,6 +35,7 @@ def printAreaTest():
     for filename in os.listdir(test_dir):
         if os.path.splitext(filename)[1].lower() in test_ext:
             full_path = os.path.join(test_dir, filename)
+            print("Tesing image: "+full_path)
             I = cv2.imread(full_path)
             Icopy = I.copy()
             Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
@@ -51,7 +52,6 @@ def printAreaTest():
                 x10,y10,w10,h10 = int(x*0.1),int(y*0.1),int(w*0.1),int(h*0.1)
                 x2,y2,w2,h2 = x-x10,y-y10,w+w10,h+h10
                 w2w=int(w2-w)
-
                 pX1,pY1,pX2,pY2 = x2,y2,x+x10+w2,y+y10+h2
                 # if(pX1<0):pX1=0
                 # elif(pX1>shape[0]):pX1=shape[0]
@@ -65,11 +65,12 @@ def printAreaTest():
                 lenArea = np.array(area2).size
                 if(lenArea>0):
                     clase=""
-                    senal = cv2.resize(area, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+                    senal = cv2.resize(area2, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
                     signal = (np.asarray(senal)).reshape(1, -1)
                     signalT = clasificadorLower.transform(signal)
                     vectorSignalT = signalT.astype(np.float32)
                     _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+                    clase=Yhat1[0]
                     labClase = ""
                     if clase == 0:
                         labClase = "Prohibicion"
@@ -80,17 +81,19 @@ def printAreaTest():
                         labClase = "Stop"
                     elif clase == 3:
                         labClase = "Otros"
-                    cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    cv2.rectangle(Icopy,(pX1,pY1),(pX2,pY2),(255,0,0),2)
-                    cv2.circle(Icopy,(pX1,pY1),4,(0,0,255),-1)
-                    cv2.circle(Icopy, (pX2, pY1), 4, (0, 255, 0), -1)
-                    cv2.circle(Icopy, (pX1, pY2), 4, (255, 0, 0), -1)
-                    cv2.circle(Icopy, (pX2, pY2), 4, (0, 255, 255), -1)
-                    cv2.imshow("area",area)
-                    cv2.imshow("area2",area2)
-                    # cv2.imshow("imagen",Icopy)
-                    cv2.waitKey(500)
-                    cv2.destroyAllWindows()
+                    print(labClase)
+                    if(not labClase.__eq__("Otros")):
+                        cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        cv2.rectangle(Icopy,(pX1,pY1),(pX2,pY2),(255,0,0),2)
+                        cv2.circle(Icopy,(pX1,pY1),4,(0,0,255),-1)
+                        cv2.circle(Icopy, (pX2, pY1), 4, (0, 255, 0), -1)
+                        cv2.circle(Icopy, (pX1, pY2), 4, (255, 0, 0), -1)
+                        cv2.circle(Icopy, (pX2, pY2), 4, (0, 255, 255), -1)
+                        cv2.imshow("area",area)
+                        cv2.imshow("area2",area2)
+                        # cv2.imshow("imagen",Icopy)
+                        cv2.waitKey(500)
+                        cv2.destroyAllWindows()
 
                     Icopy=I.copy()
             cv2.imshow('img', Icopy)
@@ -368,7 +371,7 @@ def train():
             for filename in os.listdir(subF):
                 if os.path.splitext(filename)[1].lower() in test_ext:
                     lista = []
-                    print("Test, processing ", subF+"\\"+filename, "\n")
+                    # print("Test, processing ", subF+"\\"+filename, "\n")
                     full_path = os.path.join(subF, filename)
                     I = cv2.imread(full_path)
                     Icopy = I.copy()
@@ -450,11 +453,12 @@ def train():
             if not res.__contains__(imagenRandom):
                 res.append(imagenRandom)
     print()
-printAreaTest()
+
 # print()
-# train()
+train()
 # print("----------------------")
-# LDA()
+LDA()
+printAreaTest()
 # print("----------------------")
 # testTrain()
 # validacionCruzada()
