@@ -7,7 +7,11 @@ import os,inspect
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as lda
 np.set_printoptions(suppress=True)
 mser = cv2.MSER_create()
-
+c0=0.1
+PRIORS = np.array([((1-c0)/3), ((1-c0)/3), ((1-c0)/3), c0])
+PRIORS /= PRIORS.sum()
+scala_shape=(25,25)
+scala_shape=(50,50)
 script_directory = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 test_dir = script_directory+"/Imagenes Deteccion/test/"
 TRAIN_DIR = script_directory+"/Imagenes Deteccion/train/"
@@ -17,6 +21,7 @@ windowArray = []
 windowArray10 = []
 labels = []
 
+#clasificadorLower = lda(priors=PRIORS)
 clasificadorLower = lda()
 clasificadorHigher = lda()
 res = []
@@ -24,23 +29,17 @@ CLL = None
 CLU = None
 
 def printAreaTest():
-    global windowArray
-    global windowArray10
-    global labels
-    global clasificadorLower
-    global clasificadorHigher
-    global CLL
-    global CLU
     area2 = []
     for filename in os.listdir(test_dir):
         if os.path.splitext(filename)[1].lower() in test_ext:
             full_path = os.path.join(test_dir, filename)
-            print("Tesing image: "+full_path)
             I = cv2.imread(full_path)
             Icopy = I.copy()
             Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
             shape = Icopy.shape
-            regions = mser.detectRegions(Igray, None)
+            # version opencv 3.1
+            # regions = mser.detectRegions(Igray, None)
+            regions = mser.detectRegions(Igray)
             rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
             for r in rects:
                 x, y, w, h = r
@@ -52,6 +51,7 @@ def printAreaTest():
                 x10,y10,w10,h10 = int(x*0.1),int(y*0.1),int(w*0.1),int(h*0.1)
                 x2,y2,w2,h2 = x-x10,y-y10,w+w10,h+h10
                 w2w=int(w2-w)
+
                 pX1,pY1,pX2,pY2 = x2,y2,x+x10+w2,y+y10+h2
                 # if(pX1<0):pX1=0
                 # elif(pX1>shape[0]):pX1=shape[0]
@@ -64,37 +64,17 @@ def printAreaTest():
                 area2 = I[pY1:pY2,pX1:pX2]
                 lenArea = np.array(area2).size
                 if(lenArea>0):
-                    clase=""
-                    senal = cv2.resize(area2, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
-                    signal = (np.asarray(senal)).reshape(1, -1)
-                    signalT = clasificadorLower.transform(signal)
-                    vectorSignalT = signalT.astype(np.float32)
-                    _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
-                    clase=Yhat1[0]
-                    labClase = ""
-                    if clase == 0:
-                        labClase = "Prohibicion"
-
-                    elif clase == 1:
-                        labClase = "Peligro"
-                    elif clase == 2:
-                        labClase = "Stop"
-                    elif clase == 3:
-                        labClase = "Otros"
-                    print(labClase)
-                    if(not labClase.__eq__("Otros")):
-                        cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                        cv2.rectangle(Icopy,(pX1,pY1),(pX2,pY2),(255,0,0),2)
-                        cv2.circle(Icopy,(pX1,pY1),4,(0,0,255),-1)
-                        cv2.circle(Icopy, (pX2, pY1), 4, (0, 255, 0), -1)
-                        cv2.circle(Icopy, (pX1, pY2), 4, (255, 0, 0), -1)
-                        cv2.circle(Icopy, (pX2, pY2), 4, (0, 255, 255), -1)
-                        cv2.imshow("area",area)
-                        cv2.imshow("area2",area2)
-                        # cv2.imshow("imagen",Icopy)
-                        cv2.waitKey(500)
-                        cv2.destroyAllWindows()
-
+                    cv2.rectangle(Icopy, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.rectangle(Icopy,(pX1,pY1),(pX2,pY2),(255,0,0),2)
+                    cv2.circle(Icopy,(pX1,pY1),4,(0,0,255),-1)
+                    cv2.circle(Icopy, (pX2, pY1), 4, (0, 255, 0), -1)
+                    cv2.circle(Icopy, (pX1, pY2), 4, (255, 0, 0), -1)
+                    cv2.circle(Icopy, (pX2, pY2), 4, (0, 255, 255), -1)
+                    cv2.imshow("area",area)
+                    cv2.imshow("area2",area2)
+                    cv2.imshow("imagen",Icopy)
+                    cv2.waitKey(500)
+                    cv2.destroyAllWindows()
                     Icopy=I.copy()
             cv2.imshow('img', Icopy)
             cv2.waitKey(0)
@@ -122,7 +102,9 @@ def testTrain():
                 Icopy = test.copy()
                 Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
                 shape = Icopy.shape
-                regions = mser.detectRegions(Igray, None)
+                # version opencv 3.1
+                # regions = mser.detectRegions(Igray, None)
+                regions = mser.detectRegions(Igray)
                 rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
                 print("Usando imagenes de train para test, processing " + imagen + "\n")
                 file.write("Test, processing " + imagen + "\n")
@@ -150,7 +132,7 @@ def testTrain():
                         area2 = areaTest
                     else:
                         area2 = Icopy[y1:y1 + y2, x1:x1 + x2]
-                    senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+                    senal = cv2.resize(areaTest, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
                     signal = (np.asarray(senal)).reshape(1, -1)
                     signalT = clasificadorLower.transform(signal)
                     vectorSignalT = signalT.astype(np.float32)
@@ -203,11 +185,13 @@ def LDA():
     global clasificadorHigher
     global CLL
     global CLU
+    global PRIORS
+    # clasificadorLower.set_params(priors=PRIORS)
     lowerWindow = np.vstack(windowArray)
     upperWindow = np.vstack(windowArray10)
     E = np.array(labels)
-    clasificadorLower.fit(lowerWindow,E)
-    vectorCLower=clasificadorLower.transform(lowerWindow)
+    # clasificadorLower.fit(lowerWindow,E)
+    vectorCLower=clasificadorLower.fit_transform(lowerWindow,E)
     vectorCUpper=clasificadorHigher.fit_transform(upperWindow,E)
     CRU = vectorCUpper.astype(np.float32,copy=True)
     CLU = cv2.ml.NormalBayesClassifier_create()
@@ -229,13 +213,14 @@ def validacionCruzada():
     global CLL
     global CLU
     ###########################
+    probabilidades=[]
     path = (script_directory + "/salidaLower.txt")
     file = open(path, 'w')
     path2 = (script_directory + "/salidaHigher.txt")
     fileH = open(path2, 'w')
     contadorU,contadorL=0,0
     for imagen in res:
-
+        # imagen = "Z:\TFG\\URJC TFG/Imagenes Deteccion/train/3-Otros\\38\\00047.ppm"
         test = cv2.imread(imagen)
         testRGB = cv2.cvtColor(test.copy(), cv2.COLOR_BGR2RGB)
         fileNameArr = imagen.split("/")
@@ -244,8 +229,10 @@ def validacionCruzada():
         Icopy = test.copy()
         Igray = cv2.cvtColor(test, cv2.COLOR_BGR2GRAY)
         shape = Icopy.shape
-        regions = mser.detectRegions(Igray, None)
-        rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
+        # version opencv 3.1
+        # regions = mser.detectRegions(Igray, None)
+        regions = mser.detectRegions(Igray)
+        rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions[1]]
         print("Usando imagenes de train para test, processing " + imagen + "\n")
         file.write("Test, processing " + imagen + "\n")
         fileH.write("Test, processing " + imagen + "\n")
@@ -271,20 +258,36 @@ def validacionCruzada():
                 area2=areaTest
             else:
                 area2 = Icopy[y1:y1+y2,x1:x1+x2]
-            senal = cv2.resize(areaTest, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+            senal = cv2.resize(areaTest, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
             signal = (np.asarray(senal)).reshape(1, -1)
             signalT = clasificadorLower.transform(signal)
             vectorSignalT = signalT.astype(np.float32)
             _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
+            probabilidades.append(prob1)
+            indice = Yhat1[0][0]
             ##tengo que cambiar esto para que no salgan tantas lineas, sino que cuente cuantas de clase 0,1,2,3 y 4 lineas nada mas
-            if imagen.__contains__("Otros"):
+            if indice==3:
                 otros += 1
-            elif imagen.__contains__("Stop"):
+            elif indice==2:
                 stop += 1
-            elif imagen.__contains__("Prohibicion"):
+            elif indice==0:
                 prohibicion += 1
-            elif imagen.__contains__("Peligro"):
+            elif indice==1:
                 peligro += 1
+        print("La imagen <<"+imagen+">>tendría que ser categorizada como ")
+        if imagen.__contains__("Otros"):
+            print("FONDO \n")
+        elif indice == 2:
+            print("STOP \n")
+        elif indice == 0:
+            print("PROHIBICION \n")
+        elif indice == 1:
+            print("PELIGRO \n")
+        print("Los resultados del clasificador son: \n")
+        print("FONDO -> "+str(otros)+"\n")
+        print("STOP -> " + str(stop)+"\n")
+        print("PROHIBICION -> " + str(prohibicion)+"\n")
+        print("PELIGRO -> " + str(peligro)+"\n")
         ###########################
         clases = [prohibicion, peligro, stop, otros]
         maximo = np.amax(clases)
@@ -311,7 +314,7 @@ def validacionCruzada():
         file.write("Cuanta cantidad de Stop se reconoce en la imagen ->" + str(stop) + "\n")
         file.write("--------------------------------------" + "\n")
         otros, peligro, stop, prohibicion = 0, 0, 0, 0
-        senal = cv2.resize(area2, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+        senal = cv2.resize(area2, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
         signal = (np.asarray(senal)).reshape(1, -1)
         signalT = clasificadorLower.transform(signal)
         vectorSignalT = signalT.astype(np.float32)
@@ -371,14 +374,20 @@ def train():
             for filename in os.listdir(subF):
                 if os.path.splitext(filename)[1].lower() in test_ext:
                     lista = []
-                    # print("Test, processing ", subF+"\\"+filename, "\n")
+                    print("Test, processing ", subF+"\\"+filename, "\n")
                     full_path = os.path.join(subF, filename)
                     I = cv2.imread(full_path)
                     Icopy = I.copy()
                     Igray = cv2.cvtColor(I, cv2.COLOR_BGR2GRAY)
                     shape = Icopy.shape
-                    regions = mser.detectRegions(Igray, None)
-                    rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
+                    imagen = cv2.imread(full_path,0)
+                    # version opencv 3.1
+                    # regions = mser.detectRegions(Igray, None)
+                    regions = mser.detectRegions(Igray)
+
+
+                    casi = regions[1]
+                    rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions[1]]
                     for r in rects:
                         x, y, w, h = r
                         # Simple aspect ratio filtering
@@ -400,7 +409,7 @@ def train():
                         #### LLAMADA A PROCESO LDA
                         window = Icopy[max[1]:max[1] + max[3], max[0]:max[0] + max[2]]
                         # windowArray.append(window)
-                        window = cv2.resize(window, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+                        window = cv2.resize(window, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
                         lab = None
                         if subF.__contains__("Peligro"):
                             lab = "Peligro"
@@ -417,14 +426,14 @@ def train():
                         labels.append(diccionario.get(lab))
                         windowArray.append(window.ravel())
                         # cv2.imshow('img', window)
-                        # cv2.imshow('img2', windowEXT)
-                        # cv2.waitKey()
+                        #
+                        # cv2.waitKey(800)
                         # cv2.destroyAllWindows()
                         if area2[0]<0 or area2[1]<0 or area2[2]>shape[0] or area2[3]>shape[1]:
                             windowArray10.append(window.ravel())
                         else:
                             windowEXT = Icopy[area2[1]:area2[1] + area2[3], area2[0]:area2[0] + area2[2]]
-                            windowEXT = cv2.resize(windowEXT, (25, 25), None, 0, 0, cv2.INTER_NEAREST)
+                            windowEXT = cv2.resize(windowEXT, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
                             windowArray10.append(windowEXT.ravel())
                         count+=1
                     listaImagenes.append(subF+"\\"+filename)
@@ -454,11 +463,13 @@ def train():
                 res.append(imagenRandom)
     print()
 
+
+
+# printAreaTest()
 # print()
 train()
 # print("----------------------")
 LDA()
-printAreaTest()
 # print("----------------------")
 # testTrain()
-# validacionCruzada()
+validacionCruzada()
