@@ -66,7 +66,7 @@ def validacionCruzada():
     fileH = open(path2, 'w')
     contadorU,contadorL=0,0
     for imagen in res:
-        imagen = "Z:\TFG\\URJC TFG/Imagenes Deteccion/train/3-Otros\\38\\00047.ppm"
+        # imagen = "Z:\TFG\\URJC TFG/Imagenes Deteccion/train/3-Otros\\38\\00047.ppm"
         test = cv2.imread(imagen)
         testRGB = cv2.cvtColor(test.copy(), cv2.COLOR_BGR2RGB)
         fileNameArr = imagen.split("/")
@@ -233,7 +233,7 @@ def train():
                         window = Icopy[max[1]:max[1] + max[3], max[0]:max[0] + max[2]]
                         window = cv2.resize(window, (200,200), None, 0, 0, cv2.INTER_LANCZOS4)
                         window = HOG(window)
-                        window = cv2.resize(window, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
+                        # window = cv2.resize(window, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
                         lab = None
                         if subF.__contains__("Peligro"):
                             lab = "Peligro"
@@ -251,7 +251,9 @@ def train():
 
                         ##
                         labels.append(diccionario.get(lab))
-                        windowArray.append(window.ravel())
+                        windowArray.append(window)
+                        # windowArray.append(window.ravel())
+                        # ----------------------------------------------------
                         # cv2.imshow('img', window)
                         # cv2.imshow('img2', windowEXT)
                         # cv2.waitKey()
@@ -263,8 +265,8 @@ def train():
                             windowEXT = cv2.resize(windowEXT, scala_shape, None, 0, 0, cv2.INTER_NEAREST)
                             ##LLAMADA HOG
                             windowEXT = HOG(windowEXT)
-                            ##
-                            windowArray10.append(windowEXT.ravel())
+                            ##---------------------------------------------------------
+                            # windowArray10.append(windowEXT.ravel())
                         count+=1
                     listaImagenes.append(subF+"\\"+filename)
                         # if count == 1:
@@ -298,21 +300,21 @@ def HOG (window):
     fd, hog_image = hog(image, orientations=9, pixels_per_cell=(8, 8),
                         cells_per_block=(2, 2), visualise=True)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
-
-    ax1.axis('off')
-    ax1.imshow(image, cmap=plt.cm.gray)
-    ax1.set_title('Input image')
-    ax1.set_adjustable('box-forced')
-
-    # Rescale histogram for better display
-    hog_image_rescaled = exposure.rescale_intensity(hog_image, in_range=(0, 0.02))
-
-    ax2.axis('off')
-    ax2.imshow(hog_image_rescaled, cmap=plt.cm.gray)
-    ax2.set_title('Histogram of Oriented Gradients')
-    ax1.set_adjustable('box-forced')
-    plt.show()
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
+    #
+    # ax1.axis('off')
+    # ax1.imshow(image, cmap=plt.cm.gray)
+    # ax1.set_title('Input image')
+    # ax1.set_adjustable('box-forced')
+    #
+    # # Rescale histogram for better display
+    # hog_image_rescaled = exposure.rescale_intensity(hog_image, in_range=(0, 0.02))
+    #
+    # ax2.axis('off')
+    # ax2.imshow(hog_image_rescaled, cmap=plt.cm.gray)
+    # ax2.set_title('Histogram of Oriented Gradients')
+    # ax1.set_adjustable('box-forced')
+    # plt.show()
 
     ######
     return hog_image
