@@ -8,9 +8,9 @@ from shutil import copy as cp
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as lda
 np.set_printoptions(suppress=True)
 mser = cv2.MSER_create()
-c0=0.99
-PRIORS = np.array([((1-c0)/3), ((1-c0)/3), ((1-c0)/3), c0])
-PRIORS /= PRIORS.sum()
+c0=0.9
+PRIORS = np.array([c0,((1-c0)/3),((1-c0)/3) ,((1-c0)/3) ])
+#PRIORS /= PRIORS.sum()
 scala_shape=(25,25)
 #scala_shape=(50,50)
 scala_shapeH=(80,80)
@@ -25,9 +25,9 @@ windowArray10 = []
 labels = []
 labelsLow = []
 labelsHigh = []
-clasificadorLower = lda()
+clasificadorLower = None
 # clasificadorLower = lda()
-clasificadorHigher = lda()
+clasificadorHigher = None
 res = []
 CLL = None
 CLU = None
@@ -196,7 +196,9 @@ def LDA():
     global lda_test
     global classTest
     clasificadorLower = lda(priors=PRIORS,n_components=3)
+    #clasificadorLower=lda()
     clasificadorHigher = lda(priors=PRIORS, n_components=3)
+    #clasificadorHigher = lda()
     lowerWindow = np.vstack(windowArray)
     upperWindow = np.vstack(windowArray10)
     E = np.array(labels)
@@ -211,12 +213,13 @@ def LDA():
     CRL = vectorCLower.astype(np.float32, copy=True)
     CLL = cv2.ml.NormalBayesClassifier_create()
     CLL.train(CRL, cv2.ml.ROW_SAMPLE, ELow)
-    ldaTest = lda(n_components=2)
-    x_lda=ldaTest.fit_transform(lowerWindow,ELow)
-    x_lda=x_lda.astype(np.float32,copy=True)
-    lda_test=ldaTest
-    classTest = cv2.ml.NormalBayesClassifier_create()
-    classTest.train(x_lda,cv2.ml.ROW_SAMPLE,ELow)
+    ###########################################
+    # ldaTest = lda(n_components=2)
+    # x_lda=ldaTest.fit_transform(lowerWindow,ELow)
+    # x_lda=x_lda.astype(np.float32,copy=True)
+    # lda_test=ldaTest
+    # classTest = cv2.ml.NormalBayesClassifier_create()
+    # classTest.train(x_lda,cv2.ml.ROW_SAMPLE,ELow)
     print()
 
     print()
@@ -283,6 +286,8 @@ def validacionCruzada():
     global CLL
     global CLU
     global classTest
+    errores = 0
+    imagenes = 0
     ###########################
     probabilidades = []
     path = (script_directory + "/salidaLower.txt")
@@ -313,7 +318,7 @@ def validacionCruzada():
                 rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
                 print("Usando imagenes de train para test, processing " + imagen + "\n")
                 fileP.write("Usando imagenes de train para test, processing " + imagen + "\n")
-                file.write("Test, processing " + imagen + "\n")
+
                 fileH.write("Test, processing " + imagen + "\n")
                 areaFinal = [-1,-1,-1,-1]
                 area = -1
@@ -346,9 +351,9 @@ def validacionCruzada():
                         signalT = clasificadorLower.transform(signal)
                         vectorSignalT = signalT.astype(np.float32)
                         _, Yhat1, prob1 = CLL.predictProb(vectorSignalT)
-                        vector = lda_test.transform(signal)
-                        vector = vector.astype(np.float32)
-                        _,Yhat1Test,prob1Test = classTest.predictProb(vector)
+                        # vector = lda_test.transform(signal)
+                        # vector = vector.astype(np.float32)
+                        # _,Yhat1Test,prob1Test = classTest.predictProb(vector)
                         indice = Yhat1[0][0]
                     else:
                         senal2 = cv2.resize(areaTest,scala_shapeH,None,0,0,cv2.INTER_NEAREST)
@@ -420,7 +425,11 @@ def validacionCruzada():
                     labClase = "Stop"
                 elif clase == 3:
                     labClase = "Otros"
-                file.write(imagen+"->"+labClase+"\n\n")
+                if not imagen.__contains__(labClase):
+                    file.write("Test, processing " + imagen + "\n")
+                    file.write(imagen+"->"+labClase+"\n\n")
+                    errores+=1
+                imagenes+=1
 ########################################################################
                 # # cv2.imshow("imagen", Icopy2)
                 # # cv2.waitKey()
@@ -481,6 +490,7 @@ def validacionCruzada():
                 # # cv2.imshow("TEST", test)
                 # # cv2.waitKey()
                 # # cv2.destroyAllWindows()
+    file.write("\n\n Errores: "+str(errores) +" de "+str(imagenes)+" Imagenes")
     fileP.close()
     file.close()
     fileH.close()
